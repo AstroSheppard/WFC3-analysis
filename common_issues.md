@@ -14,7 +14,9 @@ To merge specific files between branches:
 3) git checkout OTHER_BRANCH PATH_TO_FILES
 4) commit changes
 5) push back to branch you merged into
+
 Example: Create data directory and merge csv files from python2 branch into main (python3) branch
+
 git checkout main
 
 git pull origin main
