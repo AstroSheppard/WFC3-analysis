@@ -6,3 +6,5 @@ Both reference RECTE/ramp, but not totally clear what bin_mcmc_fixed, fixed over
 
 
 Binfit_new.py sets uses fitter in marg_new.py to derive spectrum for marginalization. Filt_waves.csv gives a list of wavelengths for common filters in order to interpolate limb-darkening to bin's wavelength. Emcee_runs contain diagnostics for MCMC (visualization of model fits, pickle file of sampler, autocorrelation estimate and residuals for chains, visualization of chains, corner plot, 3 sigma ranges of parameters). 
+
+Need to potentially install kapteyn/RECTE here as well.
