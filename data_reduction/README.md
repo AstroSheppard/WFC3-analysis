@@ -16,7 +16,7 @@ transit = 0 for eclipse, 1 for transit
 
 This first finds an approximate wavelength solution, and uses that to remove remaining flats (flat.fits). It then uses data quality array to mask pixels which are bad in every image. Finally, it corrects for cosmic rays, and saves the reduced data to reduced/final.
 
-wave_solution.py: Uses stellar spectrum to fit for a wavelength solution
+wave_solution.py: Uses stellar spectrum combined with Grism sensitivity (sensitivity.fits) to fit for a wavelength solution
 
 fullzap.py: Cosmic ray correction module, imported by reduction.py
 
