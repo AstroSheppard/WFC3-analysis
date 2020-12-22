@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 import time
@@ -334,7 +335,7 @@ def binramp(p_start
     params = m2.params
     perror = m2.stderr
     depth_err_nlls=perror[0]*params[0]*2.0
-    print 'Reduced chi^2 NLLS = %.3f' % (m2.rchi2_min)
+    print('Reduced chi^2 NLLS = %.3f' % (m2.rchi2_min))
 
     
     # Re-Calculate each of the arrays dependent on the output parameters
@@ -350,7 +351,7 @@ def binramp(p_start
     w_model=lc_model*systematic_model  
     w_residuals = (y - w_model)
     std = np.std(w_residuals)
-    print 'Ratio: %.2f' % (std/np.median(err))
+    print('Ratio: %.2f' % (std/np.median(err)))
     #plt.plot(x, w_model, 'ro')
     #plt.plot(x, systematic_model, 'go')
     #plt.errorbar(x, y,err, color='b', marker='x')
@@ -383,7 +384,7 @@ def binramp(p_start
  
     p0 = np.array(params).copy()
     perr = np.array(perror).copy()
-    print 'NLLS', p0
+    print('NLLS', p0)
     #p_max=max_like(p0, x, y, err, c1, c2, c3
     #               , c4, Per, exptime, orbit_start, orbit_end
     #               , epoch, inclin, a_r, rprs, transit)
@@ -453,8 +454,8 @@ def binramp(p_start
         chain = sampler.chain[:,burn:,pp]
         taus[pp] = autocorr_new(chain)
         
-    print taus
-    print ' Mean integrated auto time: %.2f' % np.mean(taus)
+    print(taus)
+    print(' Mean integrated auto time: %.2f' % np.mean(taus))
 
     samples = sampler.chain[:,burn:,:].reshape((-1, ndim))
     samples_orig = samples.copy()
@@ -498,7 +499,7 @@ def binramp(p_start
     else:
         plt.show()
     accept=sampler.acceptance_fraction
-    print 'accept rate: ', np.median(accept)
+    print('accept rate: ', np.median(accept))
     #plt.clf()
     #plt.close()
     p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
@@ -546,7 +547,7 @@ def binramp(p_start
     dof = len(img_date) - np.sum(syst==0)
     rchi2 = np.sum(fit_residuals**2/fit_err**2)/dof
 
-    print 'Reduced chi^2 = %.3f' % rchi2
+    print('Reduced chi^2 = %.3f' % rchi2)
 
     #mc_depth_err = (p_mcmc[0][1]+p_mcmc[0][2])/2.0
     mc_model_ratio = depth_err/depth_err_nlls
@@ -558,7 +559,7 @@ def binramp(p_start
     mc_results['Residuals Ratio'] = rms/np.median(fit_err)
     mc_results['Rchi2'] = rchi2
     
-    print mc_results
+    print(mc_results)
     if savemc:
         mc_results.to_csv(mc_dir+'/best_params.csv')
 

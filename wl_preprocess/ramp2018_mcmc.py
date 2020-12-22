@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 sys.path.insert(0, '../')
@@ -358,7 +359,7 @@ def ramp2018(p_start,
     m2.fit()
     params = m2.params
     perror = m2.stderr
-    print m2.rchi2_min
+    print(m2.rchi2_min)
     
     # Re-Calculate each of the arrays dependent on the output parameters
     phase = (x-params[2])/params[14] 
@@ -375,7 +376,7 @@ def ramp2018(p_start,
     w_model=lc_model*systematic_model  
     w_residuals = (y - w_model)
     std = np.std(w_residuals)
-    print std/np.median(err)
+    print(std/np.median(err))
     plt.plot(x, w_model, 'ro')
     #plt.plot(x, systematic_model, 'go')
     plt.errorbar(x, y,err, color='b', marker='x')
@@ -427,10 +428,10 @@ def ramp2018(p_start,
     #stderror=m2.stderr
 
     if transit==True:
-        print 'Depth = %.1f +/- %.1f at %.5f' %(np.square(params[0])*1e6,
-                                                perror[0]*2.0*params[0]*1e6, params[2])
+        print('Depth = %.1f +/- %.1f at %.5f' %(np.square(params[0])*1e6,
+                                                perror[0]*2.0*params[0]*1e6, params[2]))
     else:
-        print 'Depth = ',params[15], ' at ', params[2]
+        print('Depth = ',params[15], ' at ', params[2])
 
     if fit_method=='mcmc':
         start_time=time.time()
@@ -442,7 +443,7 @@ def ramp2018(p_start,
         p0 = np.array(params).copy()
         perr = np.array(perror).copy()
         #print 'Max likelihood', p_max
-        print 'NLLS', p0
+        print('NLLS', p0)
 
         #p0=np.append(p0, 0.0)
         #perr=np.append(perr, 0.0)
@@ -495,7 +496,7 @@ def ramp2018(p_start,
             syst[0]=1
             syst[15]=0
         ndim, nwalkers = len(p0[syst==0]), int(len(p0[syst==0])*2.5/2)*2
-        print 'done with maximizing likelihood'
+        print('done with maximizing likelihood')
         #scale=np.array([1e-3, 1e-2, 1e-4, 1e-2, .1, .1, .1, .1, .1, 1e-3, 1e-3])
 
         # when using gaussian prior, set ars prior to literature values
@@ -529,13 +530,13 @@ def ramp2018(p_start,
             if (i+1) % 100 == 0:
                 print("{0:5.1%}".format(float(i) / nsteps))
         #sampler.run_mcmc(pos, nsteps)
-        print "Time elapsed in minutes %.2f" % ((time.time()-start_time)/60)
+        print("Time elapsed in minutes %.2f" % ((time.time()-start_time)/60))
 
        
         burn = 5000
 
         for pp in range(len(p0[syst==0])):
-            print lab[syst==0][pp]
+            print(lab[syst==0][pp])
             chain = sampler.chain[:,burn:,pp]
             N = np.exp(np.linspace(np.log(100), np.log(chain.shape[1]), 10)).astype(int)
             new = np.empty(len(N))
@@ -549,12 +550,12 @@ def ramp2018(p_start,
         plt.show()
         taus = np.zeros_like(p0[syst==0])
         for pp in range(len(p0[syst==0])): 
-            print lab[syst==0][pp]
+            print(lab[syst==0][pp])
             chain = sampler.chain[:,burn:,pp]
             taus[pp] = autocorr_new(chain)
 
-        print taus
-        print ' Mean integrated auto time: %.2f' % np.mean(taus)
+        print(taus)
+        print(' Mean integrated auto time: %.2f' % np.mean(taus))
 
         pickle_dict = {'sampler': sampler, 'ndim': ndim,
                        'nwalkers':nwalkers, 'syst':syst,'lab':lab,
@@ -589,7 +590,7 @@ def ramp2018(p_start,
         #    if index[i] == 1:
         #        plot_chain(sampler.chain, i, save=save)
         for i in range(ndim):
-            print 'skip'
+            print('skip')
             plot_chain(sampler.chain, i, lab[syst==0][i],
                        save=save)
         #plot_chain(sampler.chain, 1, save=save)
@@ -604,7 +605,7 @@ def ramp2018(p_start,
         fig = corner.corner(samples, labels=lab[syst==0]) #list of params
         plt.show()
         accept=sampler.acceptance_fraction
-        print 'accept rate: ', accept
+        print('accept rate: ', accept)
      
         #plt.savefig("mcmc_corner.png")
         plt.clf()
@@ -613,7 +614,7 @@ def ramp2018(p_start,
         p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                              zip(*np.percentile(samples, [16, 50, 84],
                                                 axis=0)))
-        print p_mcmc
+        print(p_mcmc)
      
         
         params=np.zeros(len(p_mcmc))

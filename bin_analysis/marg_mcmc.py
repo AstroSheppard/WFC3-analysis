@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 import pandas as pd
@@ -204,7 +205,7 @@ def marg(p_start
         scale = 1.0
     error = scale * err
     #print 'Beta: %.2f' % beta
-    print 'Scaling: %.2f' % (std/np.median(model_err))
+    print('Scaling: %.2f' % (std/np.median(model_err)))
     error*=beta
     for s, systematics in tqdm(enumerate(grid), desc='Final MPFIT run'):
         # Update priors
@@ -303,7 +304,7 @@ def marg(p_start
     best=np.argmax(aics)
     #print best
     zero = np.where(aics < -300)
-    if (len(zero) > 1): print 'Some bad fits - evidence becomes negative'
+    if (len(zero) > 1): print('Some bad fits - evidence becomes negative')
     if (len(zero) > 24):
         sys.exit('Over half the systematic models have negative evidence, adjust and rerun')
 
@@ -316,7 +317,7 @@ def marg(p_start
     
     w_q = (np.exp(aics-beta))/np.sum(np.exp(aics-beta))
     if np.any(~np.isfinite(w_q)):
-        print "weight is infinite, check beta"
+        print("weight is infinite, check beta")
         sss
     bestfit=np.argmax(w_q)
     n01 = np.where(w_q >= 0.1)
@@ -349,15 +350,15 @@ def marg(p_start
     depth_err = depth_err_array
     #print deld[bestfit]*1e6
     
-    print
-    print
-    print 'Minimum red chi squared', np.min(sys_rchi2)
-    print
+    print()
+    print()
+    print('Minimum red chi squared', np.min(sys_rchi2))
+    print()
     mean_depth=np.sum(w_q*depth)
     theta_qi=depth
     variance_theta_qi=depth_err*depth_err
     error_theta_i = np.sqrt(np.sum(w_q*((theta_qi - mean_depth)**2 + variance_theta_qi )))
-    print 'Depth = %f  +/-  %f' % (mean_depth*1e6, error_theta_i*1e6)
+    print('Depth = %f  +/-  %f' % (mean_depth*1e6, error_theta_i*1e6))
     marg_depth = mean_depth
     marg_depth_err = error_theta_i
     #print limb_array
@@ -371,9 +372,9 @@ def marg(p_start
     #         marg_c[i]=mean_c
     #         marg_c_err[i]=error_c
     # print 'c: ', marg_c
-    print
-    print coeffs[bestfit]
-    print np.median(sys_lightcurve_err[bestfit,:])
+    print()
+    print(coeffs[bestfit])
+    print(np.median(sys_lightcurve_err[bestfit,:]))
     if plotting == True:
 
         plt.errorbar(sys_lightcurve_x[bestfit,:], sys_lightcurve[bestfit,:]
@@ -393,7 +394,7 @@ def marg(p_start
         
     rms=np.std(sys_residuals[bestfit,:])*1e6
     ratio=rms/phot_err
-    print ratio
+    print(ratio)
     weight=w_q
     marg_error=marg_depth_err
 
@@ -407,7 +408,7 @@ def marg(p_start
     www['Visit'] = visit
     www['Bin'] = nbin
     www=www.set_index(['Visit', 'Bin'])
-    print www
+    print(www)
     try:
         curr=pd.read_csv('./bin_w.csv', index_col=[0,1])
         curr=curr.drop((visit, int(nbin)), errors='ignore')

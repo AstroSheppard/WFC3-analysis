@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 
@@ -177,9 +178,9 @@ def binramp(p_start
     AIC=(2*len(x)*np.log(np.median(err))+len(x)*np.log(2*np.pi)
          + m2.chi2_min + 2*m2.nfree)
     if transit==True:
-        print 'Depth = ', np.square(params_w[0]), ' at ', params_w[2]
+        print('Depth = ', np.square(params_w[0]), ' at ', params_w[2])
     else:
-        print 'Depth = ', params_w[15], ' at ', params_w[2]
+        print('Depth = ', params_w[15], ' at ', params_w[2])
 
     # Re-Calculate each of the arrays dependent on the output parameters
     phase = (x-params_w[2])/params_w[14] 
@@ -238,14 +239,14 @@ def binramp(p_start
     else:
         depth = params[15]
         depth_err = stderror[15]
-    print 'Depth = ',depth*1e6, ' at ', params[2]
-    print 'Error = ', depth_err*1e6
+    print('Depth = ',depth*1e6, ' at ', params[2])
+    print('Error = ', depth_err*1e6)
 
     rms=np.std(fit_residuals)*1e6
     ratio=rms/phot_err
-    print 'Rms: %f' % rms
-    print 'Photon error: %f' % phot_err
-    print 'Ratio: %f' % ratio
+    print('Rms: %f' % rms)
+    print('Photon error: %f' % phot_err)
+    print('Ratio: %f' % ratio)
     # PLOTTING
     if plotting == True:
         #plt.errorbar(img_date, y, error,ecolor='red', color='red', marker='o', ls='')

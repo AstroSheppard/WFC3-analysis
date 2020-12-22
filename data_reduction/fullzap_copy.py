@@ -1,3 +1,4 @@
+from __future__ import print_function
 import glob
 import sys
 
@@ -84,7 +85,7 @@ def pixel_zapping(xapt, yapt, allspec, plot=False):
     # Pixels expected to be outside sigma factor in image
     nextra=5.   
     np.place(allspec, allspec<0, 0)
-    print 'Negative pixels = ', np.sum(allspec<0)
+    print('Negative pixels = ', np.sum(allspec<0))
 
     # Zoom in to ignore lower-flux pixels in median calculation
     xapt1=xapt-4 
@@ -114,7 +115,7 @@ def pixel_zapping(xapt, yapt, allspec, plot=False):
         index=(dif > n*sigma)* (row_m >= ycut) * (row_m <= yhigh)
      
         allspec[index]=col_med[index]
-        print 'Bad pixels found =',np.sum(index)
+        print('Bad pixels found =',np.sum(index))
 
     zapped=allspec
     return zapped
@@ -158,7 +159,7 @@ def zapped(allspec):
 					if dif > n*sigma:
                                                 allspec[z,x,y] = med*rows[z,y]
         
-     		print 'Number Zapped is ' + str(nzap)
+     		print('Number Zapped is ' + str(nzap))
   	return allspec
 
 if len(sys.argv) != 3:

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 sys.path.insert(0, '../wl_preprocess')
 import pandas as pd
@@ -156,7 +157,7 @@ def binfit(visit
     err=spec_err[:,n1:n2]
     bins[i,:,:]=bin
     bins_error[i,:,:]=err
-    print wavelength[n1]/1e4, wavelength[n2]/1e4
+    print(wavelength[n1]/1e4, wavelength[n2]/1e4)
 
 
   
@@ -268,12 +269,12 @@ def binfit(visit
   residuals[3], residuals[2]=wmean(depth, error)
   spread=np.zeros_like(center) + (center[1] - center[0])/2.
   
-  print "Ratio of resids to photon error:", (resids/photon_err)
-  print "Median ratio of resids to photon error: %.2f" % np.median(resids/photon_err)
-  print "Mean ratio of resids to photon error: %.2f" % np.mean(resids/photon_err)
-  print "Ratio of resids to theoretical limit flux  error:", (resids/flux_error)
-  print "Median ratio of resids to theoretical limit flux  error: %.2f" % np.median(resids/flux_error)
-  print "Mean ratio of resids to theoretical limit flux  error: %.2f" % np.mean(resids/flux_error)
+  print("Ratio of resids to photon error:", (resids/photon_err))
+  print("Median ratio of resids to photon error: %.2f" % np.median(resids/photon_err))
+  print("Mean ratio of resids to photon error: %.2f" % np.mean(resids/photon_err))
+  print("Ratio of resids to theoretical limit flux  error:", (resids/flux_error))
+  print("Median ratio of resids to theoretical limit flux  error: %.2f" % np.median(resids/flux_error))
+  print("Mean ratio of resids to theoretical limit flux  error: %.2f" % np.mean(resids/flux_error))
   plt.clf()
   plt.errorbar(center, depth, error, fmt='o', ls='', color='b', ecolor='b')
   #plt.savefig()

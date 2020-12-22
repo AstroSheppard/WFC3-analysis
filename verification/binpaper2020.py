@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 import numpy as np
@@ -49,7 +50,7 @@ def comp_methods(visit, binsize, bin, wave):
     xmax=np.max(margbinphase)+.02
 
     margmod=data['Model'].values
-    print params.T
+    print(params.T)
     dfile='../bin_analysis/binmcmc_data.csv'
     pfile='../bin_analysis/binmcmc_params.csv'
     sfile='../bin_analysis/binmcmc_smooth.csv'
@@ -73,7 +74,7 @@ def comp_methods(visit, binsize, bin, wave):
     mcmccorerr=data['Corrected Flux Error'].values
     mcmcslope=(params['Slope']*mcmcbinphase+1.0)*params['Zero-flux']
     mcmcmod=data['Model'].values
-    print params
+    print(params)
     try:
         mcmcphoton_error=params['Photon Error'].values[0]
     except AttributeError:
@@ -176,7 +177,7 @@ def correlated(resids, wave, axes, color):
 
     
     significant=np.where(rms/expected -1 > 2*rmslo/expected)[0]
-    print significant
+    print(significant)
     if len(significant) == 0:
         max_beta=1.0
     else:
@@ -262,10 +263,10 @@ def adtest(resids, photon_error, norm=False):
   ad_3*=(1+4./nres-25./nres/nres)
 
   # Save all plotting stuff to somewhere? probably same place as residuals?
-  print 'Compared to theory-limited: %f' % ad_0
-  print 'Compared to Gaussian: %f' % ad_3
-  print 'Shapiro p-value: %f' % shapiro[1]
-  print 'Pearson p-value: %f' % pearson[1]
+  print('Compared to theory-limited: %f' % ad_0)
+  print('Compared to Gaussian: %f' % ad_3)
+  print('Shapiro p-value: %f' % shapiro[1])
+  print('Pearson p-value: %f' % pearson[1])
   
   return res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf
 
@@ -503,7 +504,7 @@ def binvis(visit, binsize, wave, method='marg'):
             dof = len(mresids) - nfree
             chi2 = np.sum(mresids*mresids/errors/errors)
             rchi2 = chi2/dof
-            print rchi2
+            print(rchi2)
             # Plot
             xmin=np.min(binphase)-0.005
             xmax=np.max(binphase)+.02
@@ -580,7 +581,7 @@ def binvis(visit, binsize, wave, method='marg'):
             dof = len(mresids) - nfree
             chi2 = np.sum(mresids*mresids/errors/errors)
             rchi2 = chi2/dof
-            print rchi2
+            print(rchi2)
             # Plot
             xmin=np.min(binphase)-0.005
             xmax=np.max(binphase)+.01
@@ -684,7 +685,7 @@ if __name__=='__main__':
         save=bool(int(sys.argv[6]))
     else:
         save=False
-    print save
+    print(save)
     datafile='../bin_analysis/bin_data2.csv'
     rampfile='../bin_analysis/binramp_data.csv'
     spectra='../bin_analysis/spectra.csv'
@@ -764,10 +765,10 @@ if __name__=='__main__':
         dof = len(mresids) - nfree
         chi2 = np.sum(mresids*mresids/errors/errors)
         rchi2 = chi2/dof
-        print 'Bin %2d' % i
-        print 'Chi squared:  %.2f' % chi2
-        print 'Reduced Chi squared:  %.2f' % rchi2
-        print 'DOF:  %d' % dof
+        print('Bin %2d' % i)
+        print('Chi squared:  %.2f' % chi2)
+        print('Reduced Chi squared:  %.2f' % rchi2)
+        print('DOF:  %d' % dof)
         
         wave=spec[i]
         adtest(mresids, phot_error/1e6)
@@ -789,9 +790,9 @@ if __name__=='__main__':
 
     #sp.loc[(visit, 'marg', binsize), 'Beta Max']=beta
     #sp.to_csv('../bin_analysis/spectra.csv', index_label=['Obs', 'Method', 'Bin Size'])
-    print beta
-    print np.mean(beta)
-    print np.median(beta)
+    print(beta)
+    print(np.mean(beta))
+    print(np.median(beta))
     
     rspec=sp.loc[(visit, 'ramp', binsize), 'Central Wavelength'].values
     rwave=rspec[bin]
@@ -820,9 +821,9 @@ if __name__=='__main__':
         adtest(rresids, phot_error/1e6)
         beta[i]=correlated(rresids, wave, ax, next(colors))
         name='rednoise_'+visit.replace('/','_')+'_ramp.pdf'
-        print beta
-        print np.mean(beta)
-        print np.median(beta)
+        print(beta)
+        print(np.mean(beta))
+        print(np.median(beta))
         axes[0,0].legend(loc=3)
     if save==True:
         f.savefig(name)

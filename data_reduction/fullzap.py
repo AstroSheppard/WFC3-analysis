@@ -1,3 +1,4 @@
+from __future__ import print_function
 import glob
 import sys
 
@@ -132,7 +133,7 @@ def pixel_zapping(allspec, plot=False):
     nloop=0                       
     # Pixels expected to be outside sigma factor in image   
     np.place(allspec, allspec<0, 0)
-    print 'Negative pixels = ', np.sum(allspec<0)
+    print('Negative pixels = ', np.sum(allspec<0))
 
     xapt, yapt=allspec.shape
     # Zoom in to ignore lower-flux pixels in median calculation
@@ -236,9 +237,9 @@ def zapped(allspec):
             #plt.show()
             nzap=np.ma.sum(index)    
             allspec.data[index]=medians[index]
-     	    print 'Cosmic rays corrected %d' % nzap
-            print 'Total pixels %d' % (nspat * nwave)
-            print 'Percent %.4f' % (100*(nzap + 0.0)/nspat/nwave)
+     	    print('Cosmic rays corrected %d' % nzap)
+            print('Total pixels %d' % (nspat * nwave))
+            print('Percent %.4f' % (100*(nzap + 0.0)/nspat/nwave))
             
         #sss
         return allspec

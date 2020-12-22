@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 import shutil
@@ -243,15 +244,15 @@ def lnprior(theta, theta_initial, theta_error, syst, transit=True):
         if syst[19]==0 and not -5 < theta[19] < 3:  return -np.inf
 
         if syst[20]==0 and not -5 < theta[20] < 3:  return -np.inf
-        print 'test 20'
+        print('test 20')
         if syst[21]==0 and not -4 < np.log10(np.abs(theta[21])) < 3:  return -np.inf
-        print 'test 21'
+        print('test 21')
         if syst[22]==0 and not -10 < theta[22] < 10:  return -np.inf
-        print 'test 22'
+        print('test 22')
         if syst[23]==0 and not  -4 < np.log10(np.abs(theta[23])) < 3:  return -np.inf
-        print 'test 23'
+        print('test 23')
         if syst[24]==0 and not .5 < theta[24] < 200:  return -np.inf
-        print 'test 24'
+        print('test 24')
         if not .9 < theta[25] < 1.1:  return -np.inf
         if syst[26]==0 and not -5 < theta[16] < 3:  return -np.inf
         if syst[27]==0 and not -5 < theta[27] < 3:  return -np.inf
@@ -262,7 +263,7 @@ def lnprior(theta, theta_initial, theta_error, syst, transit=True):
         if np.isfinite(np.sum(np.log(test))):
             return np.sum(np.log(test))
         else:
-            print 'how is this infinite?'
+            print('how is this infinite?')
             return -np.inf
         #print 'priors are good'
         #return 0.0
@@ -651,9 +652,9 @@ INPUTS:
     err = err/norm
     y = y/norm
 
-    print '----------      ------------     ------------'
-    print '          1ST FIT         '
-    print '----------      ------------     ------------'
+    print('----------      ------------     ------------')
+    print('          1ST FIT         ')
+    print('----------      ------------     ------------')
   
     for s, systematics in tqdm(enumerate(grid), desc='First MPFIT run'):
         system=systematics
@@ -705,9 +706,9 @@ INPUTS:
             # values if multiple) to get starting depth and epoch time for
             # next round of fits.
             best = np.argmin(AIC_test)
-            print best
-            print 'Best eclipse depth prior =', depth_test[best]
-            print 'Best center of eclipse prior =', tcenter[best]
+            print(best)
+            print('Best eclipse depth prior =', depth_test[best])
+            print('Best center of eclipse prior =', tcenter[best])
             depth = np.mean(depth_test[best])
             epoch = np.median(tcenter[best])
 
@@ -756,9 +757,9 @@ INPUTS:
         AIC=(2*len(x)*np.log(np.median(err))+len(x)*np.log(2*np.pi)
              + m2.chi2_min + 2*m2.nfree)
         if transit==True:
-            print 'Depth = ', np.square(params_w[0]), ' at ', params_w[1]
+            print('Depth = ', np.square(params_w[0]), ' at ', params_w[1])
         else:
-            print 'Depth = ', params_w[17], ' at ', params_w[1]
+            print('Depth = ', params_w[17], ' at ', params_w[1])
 
         # Re-Calculate each of the arrays dependent on the output parameters
         phase = (x-params_w[1])/params_w[16] 
@@ -787,7 +788,7 @@ INPUTS:
     std=resid_stddev[top]
     if np.median(err) < std:
         scale=std/np.median(err)
-        print scale
+        print(scale)
         #print 'Not inflating by this'
     else:
         scale=1
@@ -795,9 +796,9 @@ INPUTS:
     error=err*scale
     
     
-    print '----------      ------------     ------------'
-    print '         FINAL FIT        '
-    print '----------      ------------     ------------'
+    print('----------      ------------     ------------')
+    print('         FINAL FIT        ')
+    print('----------      ------------     ------------')
     for s, systematics in tqdm(enumerate(grid), desc='Final MPFIT run'):
   
         # Define the new priors as the parameters from the best fitting
@@ -829,16 +830,16 @@ INPUTS:
         AIC=(2*len(x)*np.log(np.median(error))+len(x)*np.log(2*np.pi)
              + m2.chi2_min + 2*nfree)
         stderror=m2.stderr
-        print
-        print 'Model ', s
-        print 'reduced chi^2:', m2.rchi2_min
-        print 'dof', m2.dof
-        print
+        print()
+        print('Model ', s)
+        print('reduced chi^2:', m2.rchi2_min)
+        print('dof', m2.dof)
+        print()
 
         if transit==True:
-            print 'Depth = ',np.square(params[0]), ' at ', params[1]
+            print('Depth = ',np.square(params[0]), ' at ', params[1])
         else:
-            print 'Depth = ',params[17], ' at ', params[1]
+            print('Depth = ',params[17], ' at ', params[1])
 
         # Re-Calculate each of the arrays dependent on the output parameters
         phase = (x-params[1])/params[16]
@@ -924,14 +925,14 @@ INPUTS:
     # Reverse sort as trying to MAXIMISE the negative log evidence
     a=np.argsort(aics)[::-1] 
     best=np.argmax(aics)
-    print best
+    print(best)
     # print aics
 
  
 
    
     zero = np.where(aics < -300)
-    if (len(zero) > 1): print 'Some bad fits - evidence becomes negative'
+    if (len(zero) > 1): print('Some bad fits - evidence becomes negative')
     if (len(zero) > 24):
         sys.exit('Over half the systematic models have negative evidence, adjust and rerun')
 
@@ -945,11 +946,11 @@ INPUTS:
     n01 = np.where(w_q >= 0.1)
     
     stdResid = np.std(sys_residuals[bestfit,:]) 
-    print 'Evidences: ', aics
-    print 'Weights: ', w_q
+    print('Evidences: ', aics)
+    print('Weights: ', w_q)
 
-    print str(len(n01[0])) + ' models have a weight over 10%. Models: ', n01[0] , w_q[n01]
-    print 'Most likely model is number ' +str(bestfit) +' at weight = ' + str(np.max(w_q))
+    print(str(len(n01[0])) + ' models have a weight over 10%. Models: ', n01[0] , w_q[n01])
+    print('Most likely model is number ' +str(bestfit) +' at weight = ' + str(np.max(w_q)))
 
     depth = depth_array
     depth_err = depth_err_array
@@ -959,7 +960,7 @@ INPUTS:
     theta_qi=depth
     variance_theta_qi=depth_err*depth_err
     error_theta_i = np.sqrt(np.sum(w_q*((theta_qi - mean_depth)**2 + variance_theta_qi )))
-    print 'Depth = %f  +/-  %f' % (mean_depth, error_theta_i)
+    print('Depth = %f  +/-  %f' % (mean_depth, error_theta_i))
     marg_depth = mean_depth
     marg_depth_err = error_theta_i 
 
@@ -972,17 +973,17 @@ INPUTS:
     ar=ar_array
     ar_err=ar_err_array
  
-    print 'Depth'
-    print depth[a]
-    print depth_err_array[a]
-    print 'Center Time'
-    print t0[a]
-    print t0_err[a]
+    print('Depth')
+    print(depth[a])
+    print(depth_err_array[a])
+    print('Center Time')
+    print(t0[a])
+    print(t0_err[a])
     mean_t0=np.sum(w_q*t0)
     theta_t0=t0
     variance_theta_t0q = t0_err*t0_err
     error_theta_t0 = np.sqrt(np.sum(w_q*((theta_t0 - mean_t0)**2 + variance_theta_t0q )))
-    print 'Central time = %f +/- %f' % (mean_t0, error_theta_t0) 
+    print('Central time = %f +/- %f' % (mean_t0, error_theta_t0)) 
     marg_epoch = mean_t0
     marg_epoch_err = error_theta_t0
     # Marginalize over inclination
@@ -992,7 +993,7 @@ INPUTS:
         variance_theta_incq = inc_err*inc_err
         error_theta_inc = np.sqrt(np.sum(w_q*((bestfit_theta_inc - mean_inc )**2
                                               + variance_theta_incq )))
-        print 'Inclination = %f +/- %f' % (mean_inc, error_theta_inc)
+        print('Inclination = %f +/- %f' % (mean_inc, error_theta_inc))
         marg_inc=mean_inc
         marg_inc_err = error_theta_inc
     else:
@@ -1005,7 +1006,7 @@ INPUTS:
         variance_theta_arq = ar_err*ar_err
         error_theta_ar = np.sqrt(np.sum(w_q*((bestfit_theta_ar - mean_ar)**2
                                               + variance_theta_arq )))
-        print 'a/R* = %f +/- %f' % (mean_ar, error_theta_ar)
+        print('a/R* = %f +/- %f' % (mean_ar, error_theta_ar))
         marg_ar=mean_ar
         marg_ar_err = error_theta_ar
     else:
@@ -1042,9 +1043,9 @@ INPUTS:
 
     rms=np.std(sys_residuals[bestfit,:])*1e6
     ratio=rms/phot_err
-    print 'Rms: %f' % rms
-    print 'Photon error: %f' % phot_err
-    print 'Ratio: %f' % ratio
+    print('Rms: %f' % rms)
+    print('Photon error: %f' % phot_err)
+    print('Ratio: %f' % ratio)
 
     ####### Auto-correlation of residuals ########
     
@@ -1097,8 +1098,8 @@ INPUTS:
         ndim, nwalkers = len(p0[syst==0]), int(len(p0[syst==0])*2.5/2)*2
         pos=np.array([p0[syst==0] + 5*perr[syst==0]*np.random.randn(ndim) for i in range(nwalkers)])
         #pos[:, sys==1] = p0[sys==1]
-        print syst
-        print p0
+        print(syst)
+        print(p0)
         
         sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob
                                         , args=(x, y, err, p0, perr, syst
@@ -1110,12 +1111,12 @@ INPUTS:
                 print("{0:5.1%}".format(float(i) / nsteps))
 
         #ac.autocorr_func_1d(samples.chain[:,:,0], norm=True)
-        print "Time elapsed in minutes %.2f" % ((time.time()-start_time)/60)
+        print("Time elapsed in minutes %.2f" % ((time.time()-start_time)/60))
         plt.clf()
         plt.close()
         burn = 4000
         for pp in range(len(p0[syst==0])):
-            print lab[syst==0][pp]
+            print(lab[syst==0][pp])
             chain = sampler.chain[:,burn:,pp]
             N = np.exp(np.linspace(np.log(100), np.log(chain.shape[1]), 10)).astype(int)
             new = np.empty(len(N))
@@ -1136,12 +1137,12 @@ INPUTS:
     
         taus = np.zeros_like(p0[syst==0])
         for pp in range(len(p0[syst==0])): 
-            print lab[syst==0][pp]
+            print(lab[syst==0][pp])
             chain = sampler.chain[:,burn:,pp]
             taus[pp] = autocorr_new(chain)
 
-        print taus
-        print ' Mean integrated auto time: %.2f' % np.mean(taus)
+        print(taus)
+        print(' Mean integrated auto time: %.2f' % np.mean(taus))
 
         pickle_dict = {'sampler': sampler, 'ndim': ndim,
                        'nwalkers':nwalkers, 'syst':syst,'lab':lab,
@@ -1191,7 +1192,7 @@ INPUTS:
             plt.show()
     
         accept=sampler.acceptance_fraction
-        print 'accept rate: ', accept
+        print('accept rate: ', accept)
         #time1 = sampler.acor
         #times=sampler.get_autocorr_time()
         #print 'acor times: ', time1

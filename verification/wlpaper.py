@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 
@@ -26,7 +27,7 @@ def bin_op(input, size, op='mean'):
 def correlated(resids, name):
     #n=resids.shape[0]/
     n=9
-    print len(resids)
+    print(len(resids))
     rms=np.zeros(n)
     error=np.zeros(n)
     binsize=np.arange(n)+1
@@ -43,7 +44,7 @@ def correlated(resids, name):
 
     
     significant=np.where(rms/expected -1 > 2*rmslo/expected)[0]
-    print significant
+    print(significant)
     if len(significant) == 0:
         max_beta=1.0
     else:
@@ -159,10 +160,10 @@ def adtest(resids, photon_error):
   ad_3*=(1+4./nres-25./nres/nres)
 
   # Save all plotting stuff to somewhere? probably same place as residuals?
-  print 'Compared to theory-limited: %f' % ad_0
-  print 'Compared to Gaussian: %f' % ad_3
-  print 'Shapiro p-value: %f' % shapiro[1]
-  print 'Pearson p-value: %f' % pearson[1]
+  print('Compared to theory-limited: %f' % ad_0)
+  print('Compared to Gaussian: %f' % ad_3)
+  print('Shapiro p-value: %f' % shapiro[1])
+  print('Pearson p-value: %f' % pearson[1])
   
   return res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf
 
@@ -268,7 +269,7 @@ def wlpaper(visit, method='marg'):
   ratio=std_res/photon_error
 
   rchi2=np.sum(resids*resids/corerr/corerr)/dof
-  print rchi2
+  print(rchi2)
   #plt.text(.52,-500, 'RMS: %03d ppm' % std_res)
   #rchi2=1.1
   plt.text(.045,-600, r'$\chi^2_{red} = %.2f$' % rchi2)

@@ -1,3 +1,4 @@
+from __future__ import print_function
 from scipy.io import readsav
 
 import pandas as pd
@@ -18,7 +19,7 @@ def get_lc_files(visit):
     elif visit == '85':
         tc = 58280.87484
 
-    print tc
+    print(tc)
     folder = 'HAT41_STIS_LCs_V2/SPECLC/visit' + str(visit) +'/*'
     data=np.sort(np.asarray(glob.glob(folder)))
 
@@ -33,7 +34,7 @@ def get_lc_files(visit):
         con = 0.0035
         waves = np.asarray(savfile[:-4].split('/')[-1].split('_')).astype(float)
         wave = waves.mean()/1e4
-        print wave
+        print(wave)
         if wave == .56065:
             pass
         else:

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pandas as pd
 import numpy as np
 import sys
@@ -50,7 +51,7 @@ def test_interp():
     key=pd.read_csv('filt_waves.csv')
 
     data=lds.set_index('Filt').join(key.set_index('Filt'),how='inner')
-    print data
+    print(data)
     j=data.loc['J'].values[:-1]
     h=data.loc['H'].values[:-1]
     avg=(j+h)/2.

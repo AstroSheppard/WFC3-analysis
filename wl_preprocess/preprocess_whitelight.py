@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 
@@ -57,7 +58,7 @@ def inputs(data, transit=True):
 
     # Rj-m, Rsolar-m,AU-m, JD -> MJD
 
-    print "Fix this to read in a/rs and rp/rs automatically"
+    print("Fix this to read in a/rs and rp/rs automatically")
 
     conversions=np.array([6.9911e7, 6.957e8, 1.49598e11, -2400000.5])
     inc=data_arr[5]
@@ -208,7 +209,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         folder = '../data_reduction/reduced/%s/%s/final/*.fits' % (visit, direction)
         data=np.sort(np.asarray(glob.glob(folder)))
         nexposure = len(data)
-        print 'There are %d exposures in this visit' % nexposure
+        print('There are %d exposures in this visit' % nexposure)
 
         alldate=np.zeros(len(data))
         time=np.zeros_like(alldate) 
@@ -253,7 +254,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         folder = '../data_reduction/reduced/%s/%s/final/*.fits' % (visit, direction)
         data=np.sort(np.asarray(glob.glob(folder)))
         nexposure = len(data)
-        print 'There are %d exposures in this visit' % nexposure
+        print('There are %d exposures in this visit' % nexposure)
 
         alldate=np.zeros(len(data))
         time=np.zeros_like(alldate) 
@@ -296,7 +297,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         folder = '../data_reduction/reduced/%s/%s/final/*.fits' % (visit, direction)
         rdata=np.sort(np.asarray(glob.glob(folder)))
         nexposure = len(rdata)
-        print 'There are %d exposures in this visit' % nexposure
+        print('There are %d exposures in this visit' % nexposure)
 
         rdate=np.zeros(len(rdata))
         rtime=np.zeros_like(rdate) 
@@ -379,7 +380,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     #orbit = np.zeros(1)
     
  
-    print "Number of total orbits: %d" % (len(orbit)-1)
+    print("Number of total orbits: %d" % (len(orbit)-1))
 
     # Choose which orbits to include in the eclipse fitting. 1-2 on either
     # side of the eclipse is recommended
@@ -416,7 +417,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         user_inputs=np.zeros(7)
         while check2==True:
             if ploton==True:
-                print 'woo'
+                print('woo')
                 #err=np.sqrt(np.sum(np.sum(allerr[:,:,:]*allerr[:,:,:], axis=1), axis=1))
                 #fl= np.sum(allspec[:,:,:], (1,2))
                 err=np.sqrt(np.sum(allerr1d*allerr1d, axis=1))
@@ -552,7 +553,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     #                          plotting=True, norandomt=norandomt,
     #                          openinc=openinc, openar=openar, fixtime=fixtime,
     #                          transit=transit, savewl=visit)
-    print props
+    print(props)
 
     results=wl.whitelight2020(props, date, spec1d.data,  err1d.data, dir_array,
                               plotting=True, mcmc=mcmc, norandomt=norandomt,
@@ -605,12 +606,12 @@ if __name__=='__main__':
     best_results, inputs= preprocess_whitelight(visit, direction
                                                 ,transit=transit, savedata=False)
     
-    print best_results
-    print "Marg Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6)
-    print "Marg Central Event Time: %f +/- %f" % (best_results[2], best_results[3])
-    print "Marg Inclination: %f +/- %f" % (best_results[4], best_results[5])
-    print "Marg a/R*: %f +/- %f" % (best_results[6], best_results[7])
-    print "Marg limb darkening params: ", best_results[8], "+/-", best_results[9]
+    print(best_results)
+    print("Marg Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
+    print("Marg Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
+    print("Marg Inclination: %f +/- %f" % (best_results[4], best_results[5]))
+    print("Marg a/R*: %f +/- %f" % (best_results[6], best_results[7]))
+    print("Marg limb darkening params: ", best_results[8], "+/-", best_results[9])
 
     inp=pd.DataFrame(inputs, columns=['User Inputs'])
     inp['Visit']=visit+'/'+direction

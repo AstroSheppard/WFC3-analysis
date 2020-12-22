@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import glob
 
@@ -86,13 +87,13 @@ if __name__=='__main__':
 
     data, headers, errors, raw=flatfield(visit, direction)
     
-    print 'flats done'
+    print('flats done')
     mask=dq(visit, direction, data)
     mask=np.broadcast_to(mask, data.shape)
     data=np.ma.array(data, mask=mask)
     cr_data=fullzap.zapped(data)
     
-    print 'cr done'
+    print('cr done')
     filename = './reduced/'+ visit + '/'+direction+'/final/'
     fullzap.bad_pixels(cr_data, headers, errors, raw, filename)
     

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 
@@ -211,9 +212,9 @@ INPUTS:
     AIC=(2*len(x)*np.log(np.median(err))+len(x)*np.log(2*np.pi)
          + m2.chi2_min + 2*m2.nfree)
     if transit==True:
-        print 'Depth = ', np.square(params_w[0]), ' at ', params_w[2]
+        print('Depth = ', np.square(params_w[0]), ' at ', params_w[2])
     else:
-        print 'Depth = ', params_w[15], ' at ', params_w[2]
+        print('Depth = ', params_w[15], ' at ', params_w[2])
 
     # Re-Calculate each of the arrays dependent on the output parameters
     phase = (x-params_w[2])/params_w[14] 
@@ -248,9 +249,9 @@ INPUTS:
     stderror=m2.stderr
 
     if transit==True:
-        print 'Depth = ',np.square(params[0]), ' at ', params[2]
+        print('Depth = ',np.square(params[0]), ' at ', params[2])
     else:
-        print 'Depth = ',params[15], ' at ', params[2]
+        print('Depth = ',params[15], ' at ', params[2])
 
     # Re-Calculate each of the arrays dependent on the output parameters
     phase = (x-params[2])/params[14] 
@@ -307,9 +308,9 @@ INPUTS:
 
     rms=np.std(fit_residuals)*1e6
     ratio=rms/phot_err
-    print 'Rms: %f' % rms
-    print 'Photon error: %f' % phot_err
-    print 'Ratio: %f' % ratio
+    print('Rms: %f' % rms)
+    print('Photon error: %f' % phot_err)
+    print('Ratio: %f' % ratio)
 
     if savewl:
         ################# make sure this works

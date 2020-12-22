@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 
@@ -20,7 +21,7 @@ def get_data(visit, x, y, get_raw=0):
     folder = '../data_reduction/reduced/%s/final/*.fits' % (visit)
     data=np.sort(np.asarray(glob.glob(folder)))
     nexposure = len(data)
-    print 'There are %d exposures in this visit' % nexposure
+    print('There are %d exposures in this visit' % nexposure)
 
     date=np.zeros(len(data))
     icount=np.zeros_like(date)
@@ -277,7 +278,7 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
 
     orbit=get_orbits(date)
 
-    print "Number of total orbits: %d" % (len(orbit)-1)
+    print("Number of total orbits: %d" % (len(orbit)-1))
 
     # Choose which orbits to include in the eclipse fitting. 1-2 on either
     # side of the eclipse is recommended
@@ -478,12 +479,12 @@ if __name__=='__main__':
     best_results, inputs = preprocess_ramp(visit, direction
                                                  ,transit=transit, savedata=True)
     
-    print best_results
-    print "Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6)
-    print "Central Event Time: %f +/- %f" % (best_results[2], best_results[3])
-    print "Inclination: %f +/- %f" % (best_results[4], best_results[5])
-    print "a/R*: %f +/- %f" % (best_results[6], best_results[7])
-    print "Limb darkening params: ", best_results[8], "+/-", best_results[9]
+    print(best_results)
+    print("Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
+    print("Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
+    print("Inclination: %f +/- %f" % (best_results[4], best_results[5]))
+    print("a/R*: %f +/- %f" % (best_results[6], best_results[7]))
+    print("Limb darkening params: ", best_results[8], "+/-", best_results[9])
 
 
     inp=pd.DataFrame(inputs, columns=['User Inputs'])

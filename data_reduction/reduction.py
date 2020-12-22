@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import glob
 
@@ -123,12 +124,12 @@ if __name__=='__main__':
         
     wave=wave_solution.wave_solution(visit, direction, 'bkg', plotting=plotting
                                      , savename=False, transit=transit)
-    print 'wave done'
+    print('wave done')
     data, headers, errors, raw, ff=flatfield(visit, direction, wave=wave)
     #img = data[0,:,:]
     #plt.imshow(img)
     #plt.show()
-    print 'flats done'
+    print('flats done')
     mask=dq(visit, direction, data)
     mask=np.broadcast_to(mask, data.shape)
     data=np.ma.array(data, mask=mask)
@@ -141,7 +142,7 @@ if __name__=='__main__':
     #img = data[0,:,:]
     #plt.imshow(img)
     #plt.show()
-    print 'cr done'
+    print('cr done')
     filename = './reduced/'+ visit + '/'+direction+'/final/'
     fullzap.bad_pixels(cr_data, headers, errors, raw, filename)
 

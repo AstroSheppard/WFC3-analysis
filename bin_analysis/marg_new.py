@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 import matplotlib.pyplot as plt
@@ -339,7 +340,7 @@ def marg(p_start
         #sys.exit('something is being scaled')
         #scale = std / np.median(model_err)
         scale = np.sqrt(np.median((std*std - wlerror*wlerror*run1_params[top,-1]*run1_params[top,-1])/err/err))
-        print 'Scale %.2f' % scale
+        print('Scale %.2f' % scale)
         #print 'new test scale %.2f' % scale2
     else:
         scale = 1.0
@@ -399,9 +400,9 @@ def marg(p_start
 
         ### what about xerr? I think I should use that. Of course MCMC answers
         # more clearly
-        print 'err comp'
-        print  m2.stderr/m2.xerr
-        print'-----'
+        print('err comp')
+        print(m2.stderr/m2.xerr)
+        print('-----')
         # if transit==True:
         #     print 'Depth = ',np.square(params[0]), ' at ', params[2]
         # else:
@@ -483,7 +484,7 @@ def marg(p_start
     best=np.argmax(aics)
     #print best
     zero = np.where(aics < -300)
-    if (len(zero) > 1): print 'Some bad fits - evidence becomes negative'
+    if (len(zero) > 1): print('Some bad fits - evidence becomes negative')
     if (len(zero) > 24):
         sys.exit('Over half the systematic models have negative evidence, adjust and rerun')
 
@@ -496,7 +497,7 @@ def marg(p_start
     
     w_q = (np.exp(aics-beta))/np.sum(np.exp(aics-beta))
     if np.any(~np.isfinite(w_q)):
-        print "weight is infinite, check beta"
+        print("weight is infinite, check beta")
         sss
     bestfit=np.argmax(w_q)
     n01 = np.where(w_q >= 0.1)
@@ -536,10 +537,10 @@ def marg(p_start
 
         # The below  was only necessary when combined old wl (50 models) with new bin fits (125)
         # deld=np.append(deld, np.zeros(75))
-        print "--------------------------------------"
+        print("--------------------------------------")
         # print 'Average model bias: %.1f' % (deld.mean()*1e6)
-        print 'Average white light residual coeff: %.2f' %  coeffs.mean()
-        print "--------------------------------------"
+        print('Average white light residual coeff: %.2f' %  coeffs.mean())
+        print("--------------------------------------")
         
         #delerr=np.sqrt(margerrWL**2+modeldeptherr**2)
         #coeffs=np.ones(50)
@@ -557,18 +558,18 @@ def marg(p_start
         
         depth_err = np.sqrt(depth_err_array**2+margerrWL**2)
 
-    print '----------------------------------------------------------------'
-    print 'Minimum reduced chi-squared: %.2f' % sys_rchi2[bestfit]
-    print
-    print 'Minimum reduced chi-squared without residual adjustment: %.2f' % sys_rchi2_original_err[bestfit]
+    print('----------------------------------------------------------------')
+    print('Minimum reduced chi-squared: %.2f' % sys_rchi2[bestfit])
+    print()
+    print('Minimum reduced chi-squared without residual adjustment: %.2f' % sys_rchi2_original_err[bestfit])
 
-    print "DOF: %.1f" % sys_dof[bestfit]
-    print '----------------------------------------------------------------'
+    print("DOF: %.1f" % sys_dof[bestfit])
+    print('----------------------------------------------------------------')
     mean_depth=np.sum(w_q*depth)
     theta_qi=depth
     variance_theta_qi=depth_err*depth_err
     error_theta_i = np.sqrt(np.sum(w_q*((theta_qi - mean_depth)**2 + variance_theta_qi )))
-    print 'Depth = %f  +/-  %f' % (mean_depth*1e6, error_theta_i*1e6)
+    print('Depth = %f  +/-  %f' % (mean_depth*1e6, error_theta_i*1e6))
     marg_depth = mean_depth
     marg_depth_err = error_theta_i
 
@@ -600,7 +601,7 @@ def marg(p_start
     #         marg_c_err[i]=error_c
     # print 'c: ', marg_c
 
-    print 'WL coeff %.2f' % coeffs[bestfit]
+    print('WL coeff %.2f' % coeffs[bestfit])
     #print np.median(sys_lightcurve_err[bestfit,:])
     if plotting == True:
 
@@ -621,7 +622,7 @@ def marg(p_start
         
     rms=np.std(sys_residuals[bestfit,:])*1e6
     ratio=rms/phot_err
-    print 'RMS/theoretical error: %.2f' % ratio
+    print('RMS/theoretical error: %.2f' % ratio)
     weight=w_q
     marg_error=marg_depth_err
     

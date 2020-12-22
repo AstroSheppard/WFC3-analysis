@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 sys.path.insert(0, '../')
@@ -322,7 +323,7 @@ def binramp(p_start # ,perr
         
     p_max=max_like(p0, x, y, err, c1, c2, c3
                    , c4, Per, exptime, orbit_start, orbit_end)
-    print p_max
+    print(p_max)
     
     # phase = (x-epoch)/Per
     # phase -= np.floor(phase)
@@ -354,7 +355,7 @@ def binramp(p_start # ,perr
         
         
     ndim, nwalkers = len(p0), 50
-    print 'done with maximizing likelihood'
+    print('done with maximizing likelihood')
     #scale=np.array([1e-3, 1e-2, 1e-4, 1e-2, .1, .1, .1, .1, .1, 1e-3, 1e-3])
     pos=[p_max + 1e-3*np.random.randn(ndim) for i in range(nwalkers)]
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob
@@ -387,7 +388,7 @@ def binramp(p_start # ,perr
     p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                  zip(*np.percentile(samples, [16, 50, 84],
                                     axis=0)))
-    print p_mcmc
+    print(p_mcmc)
     params=np.zeros_like(p0)
     for i, tup in enumerate(p_mcmc):
         params[i]=tup[0]
@@ -429,11 +430,11 @@ def binramp(p_start # ,perr
     #plt.show()
     #plt.savefig('mcmc_residuals_f.png')
     plt.clf()
-    print np.std(fit_residuals)*1e6/np.median(phot_err)
+    print(np.std(fit_residuals)*1e6/np.median(phot_err))
     plt.hist((fit_residuals/fit_err)/np.sum(fit_residuals/fit_err), 20)
     plt.clf()
     #plt.savefig('residual_f.png')
-    print time.time()-start_time
+    print(time.time()-start_time)
 
     #####################################################3
     """if save == True:

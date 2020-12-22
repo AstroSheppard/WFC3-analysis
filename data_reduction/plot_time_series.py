@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 
 import glob
@@ -41,7 +42,7 @@ def plot_time_series(visit
     folder = '../data_reduction/reduced/%s/%s/final/*.fits' % (visit, direction)
     data=np.sort(np.asarray(glob.glob(folder)))
     nexposure = len(data)
-    print 'There are %d exposures in this visit' % nexposure
+    print('There are %d exposures in this visit' % nexposure)
 
     alldate=np.zeros(len(data))
     time=np.zeros_like(alldate) 
@@ -85,7 +86,7 @@ def plot_time_series(visit
 
     orbit=get_orbits(alldate)
 
-    print "Number of total orbits: %d" % (len(orbit)-1)
+    print("Number of total orbits: %d" % (len(orbit)-1))
 
     # Choose which orbits to include in the eclipse fitting. 1-2 on either
     # side of the eclipse is recommended

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import time
 sys.path.insert(0, '../')
@@ -326,7 +327,7 @@ def binramp(p_start
     p_max=max_like(p0, x, y, err, c1, c2, c3
                    , c4, Per, exptime, orbit_start, orbit_end
                    , epoch, inclin, a_r, rprs, transit)
-    print p_max
+    print(p_max)
 
     # phase = (x-epoch)/Per
     # phase -= np.floor(phase)
@@ -358,7 +359,7 @@ def binramp(p_start
         
         
     ndim, nwalkers = len(p0), 50
-    print 'done with maximizing likelihood'
+    print('done with maximizing likelihood')
     scale=np.array([1e-5, 1e-2, 1e-2, .1, .1, .1, .1, .1, 1e-3])
     pos=[p_max + scale*np.random.randn(ndim) for i in range(nwalkers)]
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob
@@ -398,7 +399,7 @@ def binramp(p_start
     p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                  zip(*np.percentile(samples, [16, 50, 84],
                                     axis=0)))
-    print p_mcmc
+    print(p_mcmc)
     params=np.zeros_like(p0)
     for i, tup in enumerate(p_mcmc):
         params[i]=tup[0]
