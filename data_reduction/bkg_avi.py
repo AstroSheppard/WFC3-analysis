@@ -23,7 +23,7 @@ def onclick(event):
 
     global coords
     coords.append((ix, iy))
-    
+
     if len(coords) == 2:
         fig.canvas.mpl_disconnect(cid)
 
@@ -35,7 +35,7 @@ def onclick_bkg(event):
 
     global bkg_coords
     bkg_coords.append((iix, iiy))
-    
+
     if len(bkg_coords) == 2:
         fig.canvas.mpl_disconnect(cid)
 
@@ -51,49 +51,49 @@ def onclick_bkg2(event):
     if len(bkg_coords2) == 2:
         fig.canvas.mpl_disconnect(cid)
 
-        
+
 def test(img, window, final_img,get_window=True):
-        """ Test to make sure window size does not cut 
-        out important data"""
-        #scale=46.7
-        raw_fit=bkg(img, window, get_window=get_window, test=True)
-        final_img=final_img#*scale
-	fits.writeto('./test_zapping/raw.fits', final_img, overwrite=True)
-	sys.exit('Compare background-subtracted image with input image (raw.fits)')
+    """ Test to make sure window size does not cut
+    out important data"""
+    #scale=46.7
+    raw_fit=bkg(img, window, get_window=get_window, test=True)
+    final_img=final_img#*scale
+    fits.writeto('./test_zapping/raw.fits', final_img, overwrite=True)
+    sys.exit('Compare background-subtracted image with input image (raw.fits)')
 
 def get_data(visit, direction=None):
-        """ Extract only quality, spectroscopic fits files """
-        # Read in data and decare arrays
-        ima=np.sort(np.asarray(glob.glob('../planets/'+visit+'/*ima.fits')))
-        raw=np.sort(np.asarray(glob.glob('../planets/'+visit+'/*ima.fits')))
-        fit=fits.open(ima[0])
-        example=fit[1].data
-        xsize, ysize=np.shape(example)
+    """ Extract only quality, spectroscopic fits files """
+    # Read in data and decare arrays
+    ima=np.sort(np.asarray(glob.glob('../planets/'+visit+'/*ima.fits')))
+    raw=np.sort(np.asarray(glob.glob('../planets/'+visit+'/*ima.fits')))
+    fit=fits.open(ima[0])
+    example=fit[1].data
+    xsize, ysize=np.shape(example)
+    fit.close()
 
-        fit.close()
-
-	# Make sure the data is spectroscopic and SPARS10 (scan, not rapid)
-        obstype=np.zeros(len(ima)).astype(str)
-        rate=np.zeros(len(ima)).astype(str)
-        quality=np.zeros(len(ima)).astype(str)
-  	for i,img in tqdm(enumerate(ima)):
+    # Make sure the data is spectroscopic and SPARS10 (scan, not rapid)
+    obstype=np.zeros(len(ima)).astype(str)
+    rate=np.zeros(len(ima)).astype(str)
+    quality=np.zeros(len(ima)).astype(str)
+    for i,img in tqdm(enumerate(ima)):
                 fit=fits.open(img)
                 header=fit[0].header
                 dire=header['POSTARG2'] + 5.0
                 if direction == 'forward':
                     if dire > 0:
-      	                obstype[i]=header['OBSTYPE'] 
+                        obstype[i]=header['OBSTYPE']
                         rate[i]=header['SAMP_SEQ']
-            	        quality[i]=header['QUALITY']
+                        quality[i]=header['QUALITY']
                 elif direction == 'reverse':
                     if dire < 0:
-      	                obstype[i]=header['OBSTYPE'] 
+                        obstype[i]=header['OBSTYPE']
                         rate[i]=header['SAMP_SEQ']
-            	        quality[i]=header['QUALITY']
+                        quality[i]=header['QUALITY']
                 else:
-      	            obstype[i]=header['OBSTYPE'] 
-                    rate[i]=header['SAMP_SEQ']
-            	    quality[i]=header['QUALITY']   
+                    obstype[i
+                            q]=header['OBSTYPE']
+                    Rate[i]=header['SAMP_SEQ']
+                    quality[i]=header['QUALITY']
                     fit.close()
         index=(obstype == 'SPECTROSCOPIC')* (
            (rate ==  'SPARS10') + (rate == 'SPARS25')) * (quality != 'LOCKLOST')
@@ -105,26 +105,26 @@ def get_data(visit, direction=None):
 
 
 def maxrow(frame):
-        """Return index of maximum flux row"""
-	f=np.sum(frame,axis=1)
-  	#f1=np.argmax(f)
-        # Define max value as the median of the top 5
-        # highest flux rows to avoid oddities from
-        # cosmic rays
-        norm = np.median(np.sort(f)[-5:])
-        perc = 0.01#, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05]
-        #for per in perc:
-        #    # Get all rows with flux > 2% of norm flux --- this can be adjustable
-        index = np.where(f > perc*norm)[0]
-        index = check_continuity(index)
-                #print "Percent of max flux used for cut-off: %.3f" % per
-                #break
-        
-        low = np.min(index)
-        high = np.max(index)
-        mid = (low+high)/2
-        
-  	return low, mid, high
+    """Return index of maximum flux row"""
+    f=np.sum(frame,axis=1)
+    #f1=np.argmax(f)
+    # Define max value as the median of the top 5
+    # highest flux rows to avoid oddities from
+    # cosmic rays
+    norm = np.median(np.sort(f)[-5:])
+    perc = 0.01#, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05]
+    #for per in perc:
+    #    # Get all rows with flux > 2% of norm flux --- this can be adjustable
+    index = np.where(f > perc*norm)[0]
+    index = check_continuity(index)
+            #print "Percent of max flux used for cut-off: %.3f" % per
+            #break
+
+    low = np.min(index)
+    high = np.max(index)
+    mid = (low+high)/2
+
+    return low, mid, high
 
 def check_continuity(index):
     flag = np.zeros_like(index)
@@ -133,7 +133,7 @@ def check_continuity(index):
             flag[i] = 1
     new_index = index[flag == 0]
     print("Flags: %f" % flag.sum())
-    
+
     return new_index
     #return np.all(np.arange(len(index))+min(index) == index)
 
@@ -147,43 +147,44 @@ def bkg(raw, size_window, test=False, get_window=False):
                 corr=header['UNITCORR']
                 nFrames=exp[-1].header['EXTVER']
                 err=exp[2].data
-  	        frames = np.zeros((nFrames, xlen, ylen))
-  	        times=np.zeros(nFrames)
-  	        frame_diffs = np.zeros((nFrames-1, xlen, ylen))
-  	        count=0
+                frames = np.zeros((nFrames, xlen, ylen))
+                times=np.zeros(nFrames)
+                frame_diffs = np.zeros((nFrames-1, xlen, ylen))
+                count=0
                 # Iterate through extensions in fits file
-  	        for item in exp[1:]:
+                for item in exp[1:]:
                     if 'SCI' in item.header['EXTNAME']:
                         frames[count,:,:]=item.data
-     		        times[count]=item.header['SAMPTIME']
-     		        count= count + 1
-  	
+                        times[count]=item.header['SAMPTIME']
+                        count= count + 1
 
-	# Check if the units are in electrons or in electrons/s. If per
-	# second, multiply frame by samptime. 
-	# Zero out background that is far enough from source to be noise (or
-	# is from secondary source)
+
+
+        # Check if the units are in electrons or in electrons/s. If per
+        # second, multiply frame by samptime.
+        # Zero out background that is far enough from source to be noise (or
+        # is from secondary source)
 
         removed=0
         new_coords = False
-  	if 'OMIT' in corr:
-     		# Last frame is for tsamp=0. If brightness not in units of e/s, then
-		# this last frame will give large negatives. Set it to 0
+        if 'OMIT' in corr:
+                # Last frame is for tsamp=0. If brightness not in units of e/s, then
+                # this last frame will give large negatives. Set it to 0
 
                 # Adjust window size here, since "dir" is not a perfect correlation.
-     		#window=np.floor(size_window).astype(int)
+                #window=np.floor(size_window).astype(int)
 
-     		frames[-1,:,:]=0.0
-     		ny=frames.shape[2]
-    		# window=40
-    		# window=12 ; hatp41
-     		for j in range(count-1):
-        		f1=frames[j,:,:]      
-        		f2=frames[j+1,:,:]     
-        		frame_diffs[j,:,:]=f1-f2
+                frames[-1,:,:]=0.0
+                ny=frames.shape[2]
+                # window=40
+                # window=12 ; hatp41
+                for j in range(count-1):
+                        f1=frames[j,:,:]
+                        f2=frames[j+1,:,:]
+                        frame_diffs[j,:,:]=f1-f2
                         if len(bkg_coords) == 2:
                             new_coords = True
-                        
+
                         if get_window==True and j == 0:
                             #centroid=maxrow(f1-f2)
                             centroid=maxrow(f1-f2)[1]
@@ -216,11 +217,11 @@ def bkg(raw, size_window, test=False, get_window=False):
                             size_window = low, high, y1, y2
                         else:
                             low, high, y1, y2 = size_window
-        		#mrow=maxrow(frame_diffs[j,:,:])
+                        #mrow=maxrow(frame_diffs[j,:,:])
                         low, mrow, high=maxrow(frame_diffs[j,:,:])
                         low = mrow - low
                         high = high - mrow
-                        
+
                         # prevent window outside of data
                         # if mrow+high > ny: window = ny-mrow
                         # Mask data, find median of background,
@@ -233,28 +234,28 @@ def bkg(raw, size_window, test=False, get_window=False):
                         zero[~mask]=0
                         frame_diffs[j,:,:]=zero
                         removed+=med
-                        
+
                         #bg=np.concatenate((frame_diffs[j,:mrow-low,:],
                         #                   frame_diffs[j, mrow+high:,:]),axis=0)
                         #med=np.median(bg)
-                     
-                      
-       			#frame_diffs[j,:,:]=frame_diffs[j,:,:]-med
-        		#frame_diffs[j,:mrow-window,:]=0 
-        		#frame_diffs[j,mrow+window:,:]=0
+
+
+                                #frame_diffs[j,:,:]=frame_diffs[j,:,:]-med
+                        #frame_diffs[j,:mrow-window,:]=0
+                        #frame_diffs[j,mrow+window:,:]=0
                         if test:
-        	                file1='./test_zapping/dif'+str(j)+'.fits'
-        	                file2='./test_zapping/frame'+str(j)+'.fits'
+                                file1='./test_zapping/dif'+str(j)+'.fits'
+                                file2='./test_zapping/frame'+str(j)+'.fits'
                                 fits.writeto(file1,frame_diffs[j,:,:], overwrite=True)
                                 fits.writeto(file2,f1, overwrite=True)
 
-  	if 'COMPLETE' in corr:
-     	        ny=frames.shape[2]
-     		for j in range(count-1):
-        		f1=frames[j,:,:]*times[j]
-        		f2=frames[j+1,:,:]*times[j+1]
-        		frame_diffs[j,:,:]=f1-f2
-                        
+        if 'COMPLETE' in corr:
+                ny=frames.shape[2]
+                for j in range(count-1):
+                        f1=frames[j,:,:]*times[j]
+                        f2=frames[j+1,:,:]*times[j+1]
+                        frame_diffs[j,:,:]=f1-f2
+
                         if get_window==True and j == 0:
                             centroid=maxrow(f1-f2)
                             fig=plt.figure()
@@ -271,11 +272,11 @@ def bkg(raw, size_window, test=False, get_window=False):
                             high=x2-centroid
                             low=centroid-x1
                             size_window= low, high, y1, y2
-                          
+
                         else:
                             low, high, y1, y2 = size_window
-        		mrow=maxrow(frame_diffs[j,:,:])
-                        
+                        mrow=maxrow(frame_diffs[j,:,:])
+
                         # prevent window outside of data
                         if mrow+high > ny: window = ny-mrow
                         # Mask data, find median of background,
@@ -288,20 +289,20 @@ def bkg(raw, size_window, test=False, get_window=False):
                         zero[~mask]=0
                         frame_diffs[j,:,:]=zero
                         removed+=med
-                        
+
                         if test:
-        	                file1='./test_zapping/dif'+str(j)+'.fits'
-        	                file2='./test_zapping/frame'+str(j)+'.fits'
+                                file1='./test_zapping/dif'+str(j)+'.fits'
+                                file2='./test_zapping/frame'+str(j)+'.fits'
                                 fits.writeto(file1,frame_diffs[j,:,:], overwrite=True)
                                 fits.writeto(file2,f1, overwrite=True)
-  
- 
-  
-  	output=frame_diffs.sum(0)
+
+
+
+        output=frame_diffs.sum(0)
         #print low, high, y1, y2
         #plt.imshow(output)
         #plt.show()
-        
+
         # Removed = bkg error squared, add in quadrature
         err=np.sqrt(removed+np.square(err))
 
@@ -310,7 +311,7 @@ def bkg(raw, size_window, test=False, get_window=False):
             return [output, err, [low, high, y1, y2]]
         else:
             return [output, err]
-  
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         sys.exit('Please use python [bkg.py] [planet] [visit]')
@@ -323,23 +324,23 @@ if __name__ == '__main__':
     for i,img in tqdm(enumerate(ima), desc='Getting data'):
         exp=fits.open(img)
         header=exp[0].header
-        dire=header['POSTARG2'] + 5.0 
+        dire=header['POSTARG2'] + 5.0
         direction[i]=dire
         if dire > 0:
-       	    n_forward+=1
+                    n_forward+=1
             if n_forward == 1:
                 forward_img=exp[1].data
             exp.close()
         else:
             n_reverse+=1
-       	    if n_reverse == 1: 
+                    if n_reverse == 1:
                 reverse_img=exp[1].data
             exp.close()
-    # Center the source                               
+    # Center the source
     if n_forward == 0:
         img=reverse_img
     else:
-        img=forward_img            
+        img=forward_img
     fig=plt.figure()
     ax=plt.imshow(img)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
@@ -404,7 +405,7 @@ if __name__ == '__main__':
     #w2=direction[1]
     #rwindow=0
     #fwindow=0
-        
+
     # If direction[0] is negative, then it is a reverse scan, and
     # we set the window to be a size that typically captures all
     # source photons
@@ -415,7 +416,7 @@ if __name__ == '__main__':
     #else:
     #    fwindow=np.ceil(2*np.abs(w1))*xw
     # Now we check the second scan, which can be negative for a
-    # bi-directional, in which case we set the reverse window. 
+    # bi-directional, in which case we set the reverse window.
     #if w2 < 0:
     #    rwindow=np.ceil(2*np.abs(w2))*xw
     # For uni-directional, the rate doesnt change so this does nothing
@@ -428,12 +429,12 @@ if __name__ == '__main__':
     #if rwindow <= 1: rwindow = max(fwindow,1)
     #if fwindow <= 1: fwindow = max(rwindow,1)
 
-   
+
 
     # For each exposure, check if reverse or forward scan.
     # Subtract background
     # Apply window to center source
-    # Save image to all images, save header to all headers 
+    # Save image to all images, save header to all headers
     f=0
     r=0
     fwindow=[1,1,1,1]
@@ -460,9 +461,9 @@ if __name__ == '__main__':
                 #print "iteration ", i
                 #print "fwindow ", fwindow
                 raw_fit, err_array=bkg(expo, fwindow, get_window=get_window)
-                
-           
-	    img = raw_fit[x1:x2,y1:y2]
+
+
+            img = raw_fit[x1:x2,y1:y2]
             raw_file=fits.open(raw[i])
             raw_img=raw_file[1].data[x1:x2,y1:y2]
             raw_file.close()
@@ -473,7 +474,7 @@ if __name__ == '__main__':
             hdul=fits.HDUList([prim, err, rawi])
             filename = fzdir + "%03d"%f + '.fits'
             hdul.writeto(filename, overwrite=True)
-	    f+=1
+            f+=1
         else:
             if r==0:
                 print("getting reverse window")
@@ -486,8 +487,8 @@ if __name__ == '__main__':
                 #print "iteration", i
                 #print "rwindow ", rwindow
                 raw_fit, err_array=bkg(expo, rwindow, get_window=get_window)
- 
-	    img = raw_fit[x1:x2,y1:y2]
+
+            img = raw_fit[x1:x2,y1:y2]
             raw_file=fits.open(raw[i])
             raw_img=raw_file[1].data[x1:x2,y1:y2]
             raw_file.close()
@@ -498,7 +499,7 @@ if __name__ == '__main__':
             hdul=fits.HDUList([prim, err, rawi])
             filename = rzdir + "%03d"%r + '.fits'
             hdul.writeto(filename, overwrite=True)
-	    r+=1
+            r+=1
 
     # Now save aperture coordinates
     cols=['Initial Aperture']
@@ -512,9 +513,9 @@ if __name__ == '__main__':
         cur=pd.concat((cur,coords))
         cur.to_csv('./coords.csv')
     except IOError:
-        coords.to_csv('./coords.csv')   
+        coords.to_csv('./coords.csv')
 
-    print('Finished removing background ' + visit + ' visit')    
+    print('Finished removing background ' + visit + ' visit')
 
     # Write reduced data to a directory
     # for k in range(n_forward):
@@ -526,11 +527,4 @@ if __name__ == '__main__':
     #     filename = rzdir + "%03d"%k + 'r.fits'
     #     image = allimages_r[k,:,:]
     #     hdr=fits.Header.fromstring(allheader_r[k], sep='\\n')
-    #     fits.writeto(filename, image, header=hdr)    
-
-
-
-  
- 
-
-
+    #     fits.writeto(filename, image, header=hdr)
