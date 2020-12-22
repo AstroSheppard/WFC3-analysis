@@ -26,3 +26,9 @@ git checkout python2 data/l9859b/*.csv
 git commit -m "Merge some files"
 
 git push origin main
+
+Installation issues:
+
+Must install Numpy first (pip install numpy==1.19.4). This is because less developed packages mc3, kapteyn, and maybe batman-package don't appropriately handle dependencies.
+
+Issue wih BATMAN after upgrading to newest python3 version on homebrew. Cython or C-compiler related, as installer could not find include numpyarray.h. The fix to this is given in issues tab and relates to CFLAGS. Command only needed to be used once. 
