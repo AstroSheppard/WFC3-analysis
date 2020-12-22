@@ -57,8 +57,8 @@ def test(img, window, final_img,get_window=True):
         #scale=46.7
         raw_fit=bkg(img, window, get_window=get_window, test=True)
         final_img=final_img#*scale
-	fits.writeto('./test_zapping/raw.fits', final_img, overwrite=True)
-	sys.exit('Compare background-subtracted image with input image (raw.fits)')
+        fits.writeto('./test_zapping/raw.fits', final_img, overwrite=True)
+        sys.exit('Compare background-subtracted image with input image (raw.fits)')
 
 def get_data(visit, direction=None):
         """ Extract only quality, spectroscopic fits files """
@@ -75,18 +75,18 @@ def get_data(visit, direction=None):
         obstype=np.zeros(len(ima)).astype(str)
         rate=np.zeros(len(ima)).astype(str)
         quality=np.zeros(len(ima)).astype(str)
-  	for i,img in tqdm(enumerate(ima)):
+        for i,img in tqdm(enumerate(ima)):
                 fit=fits.open(img)
                 header=fit[0].header
                 dire=header['POSTARG2'] + 5.0
                 if direction == 'forward':
                     if dire > 0:
-      	                obstype[i]=header['OBSTYPE'] 
+      	                obstype[i]=header['OBSTYPE']
                         rate[i]=header['SAMP_SEQ']
             	        quality[i]=header['QUALITY']
                 elif direction == 'reverse':
                     if dire < 0:
-      	                obstype[i]=header['OBSTYPE'] 
+                        obstype[i]=header['OBSTYPE'] 
                         rate[i]=header['SAMP_SEQ']
             	        quality[i]=header['QUALITY']
                 else:
