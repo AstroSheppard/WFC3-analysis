@@ -1,3 +1,0 @@
-kapteyn @ https://www.astro.rug.nl/software/kapteyn/kapteyn-3.0.tar.gz
-mc3==3.0.2
-batman-package==2.4.7
