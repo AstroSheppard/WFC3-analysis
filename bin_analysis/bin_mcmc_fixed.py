@@ -40,7 +40,7 @@ def get_lightcurve_model(p, date, c1, c2, c3
     params.inc=inc
     params.a=ar
     params.per=Per
-    
+
     if transit==True:
         params.rp=p[0]
         params.t0=tc
@@ -62,20 +62,20 @@ def get_lightcurve_model(p, date, c1, c2, c3
 def lightcurve(p, x, c1, c2, c3, c4,  Per, exptime
                , orbit_start, orbit_end, t0, inc
                , ar, rp, transit=True):
-    """ Function used by MPFIT to fit data to lightcurve model. 
+    """ Function used by MPFIT to fit data to lightcurve model.
 
     Inputs: p: input parameters that we are fitting for
     x: Date of each observation, to be converted to phase
     means: Mean pixel count rate time series
-    exptime: exposure time 
+    exptime: exposure time
     transit: True for transit, false for eclipse
 
     Output: Returns weighted deviations between model and data to be minimized
     by MPFIT. """
     if not np.isfinite(lnprior(p, p)):
         return np.zeros_like(x)-100
-    
-    phase = (x-t0)/Per 
+
+    phase = (x-t0)/Per
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
@@ -125,16 +125,16 @@ def lnprob(p, x, y, yerr, p_start, *args):
     return lp + lnlike(p, x, y, yerr, *args)
 
 def lnprior(theta, theta_initial, transit=True):
- 
+
     """ Priors on parameters. For system, try both fixing and gaussian priors.
     For depth and others, do "uninformative" uniform priors over a large enough
     range to cover likely results
 
     Right now I'm extremely conservative. Prior is any possible value for
-    open parameters (uniform), and fixed for all others. In future, I will 
+    open parameters (uniform), and fixed for all others. In future, I will
     update fixed with gaussian priors and uniform with more appropriate uninformative
     priors. """
-    
+
     # Params: rprs, flux0, m, traps, trapf, dtraps, dtrapf
     # intrinsic_count
     # uninformative: rprs, flux0, m, traps, trapf, dtraps, dtrapf, fp?, intrinsic count
@@ -179,7 +179,7 @@ def plot_chain(chain, n, nbin, save=False):
     else:
         plt.show()
     return None
-        
+
 def binramp(p_start
             , img_date
             , allspec
@@ -236,14 +236,14 @@ def binramp(p_start
     trapf=10
     dtraps=0.0
     dtrapf=0.
-    
+
     #PLACE ALL THE PRIORS IN AN ARRAY
     p0 = [depth,flux0,epoch,m,traps, trapf, dtraps, dtrapf
           ,inclin,a_r,c1,c2,c3,c4,Per,fp, intrinsic_count]
     system=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0]
-      
+
     nParam=len(p0)
-    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE 
+    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE
 
     #  SET UP THE ARRAYS  ;
 
@@ -253,13 +253,13 @@ def binramp(p_start
     err = np.sqrt(np.sum(allerr*allerr, axis=1))
     #phot_err=1e6/np.median(np.sqrt(y))
     phot_err=1e6*np.median(err/y)
-    
+
     # Normalised Data
     # get in eclipse orbit, or first transit orbit
     ### Check if this works
     orbit_start, orbit_end=orbits('holder', x=x, y=y, transit=transit)[1]
     norm=np.median(y[orbit_start:orbit_end])
-  
+
     rawerr=err
     rawflux=y
     err = err/norm
@@ -281,16 +281,16 @@ def binramp(p_start
             params_w=m2.params
 
         # Re-Calculate each of the arrays dependent on the output parameters
-        phase = (x-params_w[2])/params_w[14] 
+        phase = (x-params_w[2])/params_w[14]
         phase -= np.floor(phase)
         phase[phase > 0.5] = phase[phase > 0.5] -1.0
-    
+
         # LIGHT CURVE MODEL: calculate the eclipse model for the resolution of the data points
         # this routine is from MANDEL & AGOL (2002)
 
         systematic_model=get_sys_model(params_w, x, phase, exptime, orbit_start, orbit_end)
         lc_model=get_lightcurve_model(params_w, x, transit=transit)
-        w_model=params_w[1]*lc_model*systematic_model  
+        w_model=params_w[1]*lc_model*systematic_model
         w_residuals = (y - w_model)/params_w[1]
         std = np.std(w_residuals)
 
@@ -322,8 +322,8 @@ def binramp(p_start
     p0=np.append(p0, 0.0)
     #do stuff, have output of 50th percentile called params.
     #Have point errors called error (error/f/params[1])
- 
-        
+
+
     p_max=max_like(p0, x, y, err, c1, c2, c3
                    , c4, Per, exptime, orbit_start, orbit_end
                    , epoch, inclin, a_r, rprs, transit)
@@ -336,11 +336,11 @@ def binramp(p_start
     # lc_model=get_lightcurve_model(p_max, x, epoch, inclin, a_r, c1, c2, c3
     #                               , c4, Per, transit=transit)
     # model=p_max[1]*lc_model*systematic_model
-    
-    # corrected = y / (p_max[1]*systematic_model)   
+
+    # corrected = y / (p_max[1]*systematic_model)
     # fit_residuals = (y - model)/p_max[1]
     # fit_err = err/p_max[1]
-    
+
     # Smooth Transit Model: change this from phase to time
     # time_smooth = (np.arange(4000)*0.00025-.5)*Per+epoch
     # phase_smooth=np.arange(4000)*.00025-.5
@@ -356,14 +356,14 @@ def binramp(p_start
     # plt.show()
     #p_max=p0
 
-        
-        
+
+
     ndim, nwalkers = len(p0), 50
     print('done with maximizing likelihood')
     scale=np.array([1e-5, 1e-2, 1e-2, .1, .1, .1, .1, .1, 1e-3])
     pos=[p_max + scale*np.random.randn(ndim) for i in range(nwalkers)]
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob
-                                    , args=(x, y, err, p0, c1, c2, c3 
+                                    , args=(x, y, err, p0, c1, c2, c3
                                             , c4, Per, exptime, orbit_start
                                             , orbit_end, epoch, inclin
                                             , a_r, rprs, transit))
@@ -395,7 +395,7 @@ def binramp(p_start
     #plt.show()
     #plt.savefig("./mcmc_figs/ecorner"+nbin+'.png')
     #plt.clf()
-        
+
     p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                  zip(*np.percentile(samples, [16, 50, 84],
                                     axis=0)))
@@ -408,7 +408,7 @@ def binramp(p_start
         params[0]=(params[0]/1e6)**.5
     else:
         params[0]=params[0]/1e6
-        
+
     phase = (x-epoch)/Per
     phase -= np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
@@ -417,8 +417,8 @@ def binramp(p_start
                                   , c4, Per, epoch, inclin, a_r
                                   , rprs, transit=transit)
     model=params[1]*lc_model*systematic_model
-    
-    corrected = y / (params[1]*systematic_model)   
+
+    corrected = y / (params[1]*systematic_model)
     fit_residuals = (y - model)/params[1]
     fit_err = err*params[-1]/params[1]
     rms = np.std(fit_residuals)
@@ -432,9 +432,9 @@ def binramp(p_start
                                       , c4, Per, epoch, inclin
                                       , a_r, rprs, transit=transit)
 
-    
-    
-    
+
+
+
     plt.clf()
     plt.errorbar(phase, corrected, fit_err, marker='o', color='blue', ecolor='blue', ls='')
 
@@ -451,7 +451,7 @@ def binramp(p_start
         plt.errorbar(phase[mid], resids[mid], fit_err[mid], color='k'
                      , ecolor='k', alpha=0.1, marker='o', ls='')
         plt.plot(phase, resids, 'ok', alpha=0.1, ls='')"""
-        
+
     #plt.errorbar(phase, np.zeros_like(phase), color='blue')
     plt.xlim([phase[0]-(phase[1]-phase[0]), phase[-1]+(phase[1]-phase[0])])
     plt.plot(phase_smooth, smooth_model)
@@ -512,7 +512,7 @@ def binramp(p_start
         ind2=pd.MultiIndex.from_product([[visit],[binsize],[nbin],['Values', 'Errors']])
         bin_params = pd.DataFrame(np.vstack((data,errors)), columns=cols, index=ind2)
         bin_params['Transit']=transit
-    
+
         try:
             cur=pd.read_csv('./binmcmc_params.csv', index_col=[0,1, 2, 3])
             #cur=cur.drop((visit, binsize,bin))
@@ -521,7 +521,7 @@ def binramp(p_start
             cur.to_csv('./binmcmc_params.csv', index_label=['Obs','Bin Size','Bin', 'Type'])
         except IOError:
             bin_params.to_csv('./binmcmc_params.csv', index_label=['Obs','Bin Size', 'Bin', 'Type'])
-            
+
 e        try:
             curr=pd.read_csv('./binmcmc_data.csv', index_col=[0,1, 2])
             curr=curr.drop((visit, binsize,int(nbin)), errors='ignore')
@@ -541,4 +541,4 @@ e        try:
     """
 
     return [depth, depth_err, rms*1e6]
-   
+

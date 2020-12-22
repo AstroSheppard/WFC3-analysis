@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 def bad_pixels(visit, direction):
     folder='./zapped2017/'+visit+'/'+direction+'/bkg/*.fits'
     data=np.sort(np.asarray(glob.glob(folder)))
-  
+
     n=len(data)
     x=np.zeros(3)                   #[apt,min,max]
-    y=np.zeros(3) 
-    xl=np.zeros(3) 
-    yl=np.zeros(3) 
+    y=np.zeros(3)
+    xl=np.zeros(3)
+    yl=np.zeros(3)
     if n > 1:
         ####Find base aperture####
         x,y=aperture(data[1])
@@ -47,14 +47,14 @@ def aperture(data):
     exp.close()
     center=np.zeros(2).astype(int)
     exposure_xcen = exposure[(xlen/2),:]
-    
+
     # Use 10% of max pixel as gauge for edge cutoff
     max_count=np.max(exposure)
     scan = np.where(exposure_xcen > max_count/10.)[0]
-    scan_width = len(scan) 
+    scan_width = len(scan)
     scan_center = int(np.median(scan))
 
-    exposure_ycen = exposure[:,scan_center] 
+    exposure_ycen = exposure[:,scan_center]
     height = np.where(exposure_ycen > max_count/10.)[0]
     scan_height = len(height)
     height_cen=int(np.median(height))
@@ -81,22 +81,22 @@ def aperture(data):
 def pixel_zapping(xapt, yapt, allspec, plot=False):
     """ Removes bad pixels by comparing each pixel
     to its column's median."""
-    nloop=3                       
+    nloop=3
     # Pixels expected to be outside sigma factor in image
-    nextra=5.   
+    nextra=5.
     np.place(allspec, allspec<0, 0)
     print('Negative pixels = ', np.sum(allspec<0))
 
     # Zoom in to ignore lower-flux pixels in median calculation
-    xapt1=xapt-4 
-   
+    xapt1=xapt-4
+
     inp=1-nextra/4./yapt/xapt1
     n=(2.)**(.5)*erfinv(inp)
     # Sigma rejection factor chosen such that only 5 pixels in image can be expected
     # to naturally lie outside the sigma range. I then can correct the pixels
     # outside the sigma range without worry about overcorrecting
 
-    for j in range(nloop):       
+    for j in range(nloop):
         # Take care of any other bad pixels by comparing each pixel to the
         # median of it's own column
         allspec1=allspec[4:-4,:]
@@ -113,7 +113,7 @@ def pixel_zapping(xapt, yapt, allspec, plot=False):
         yhigh=np.median(row_m)*1.1
         # Replace the bad pixels with the median of their column
         index=(dif > n*sigma)* (row_m >= ycut) * (row_m <= yhigh)
-     
+
         allspec[index]=col_med[index]
         print('Bad pixels found =',np.sum(index))
 
@@ -121,17 +121,17 @@ def pixel_zapping(xapt, yapt, allspec, plot=False):
     return zapped
 
 def zapped(allspec):
-        """Input is 3D numpy array of all bkg-removed exposure. 
+        """Input is 3D numpy array of all bkg-removed exposure.
         Median values and sigma cuts are used to remove cosmic rays"""
         dims=np.empty_like(allspec)
-	allspecout=dims
+        allspecout=dims
         aspec=dims
-  	med_rows=dims
+        med_rows=dims
         nspec, nx, ny = allspec.shape
-  	nloop = 2                      
-  	nzap = 0                          
-  	for j in range(nloop):      
-     		if j==0:
+        nloop = 2
+        nzap = 0
+        for j in range(nloop):
+                if j==0:
                         n=8
                 else:
                         n=6
@@ -143,24 +143,24 @@ def zapped(allspec):
                 # stddev. If stddev is above a threshold, then set that
                 # to median of it's time series value. Make sure
                 # to scale back to pre-row normalization
-                
-                rows=np.median(allspec, axis=1)          
+
+                rows=np.median(allspec, axis=1)
                 np.place(rows, rows==0, 1)
                 #rows[z,y] gives median value of row at column y in image z
-		for x in range(nx):
+                for x in range(nx):
                         aspec[:,x,:]=allspec[:,x,:]/rows
-			for y in range(ny): 
-				# Find median of every pixel's time series
-				med = np.median(aspec[:,x, y]) 
-				sigma = np.sqrt(np.sum((aspec[:,x, y]-
-                                                        med)**2)/nspec)   
-				for z in range(nspec): 
-					dif = np.abs(aspec[z,x,y]-med)
-					if dif > n*sigma:
+                        for y in range(ny):
+                                # Find median of every pixel's time series
+                                med = np.median(aspec[:,x, y])
+                                sigma = np.sqrt(np.sum((aspec[:,x, y]-
+                                                        med)**2)/nspec)
+                                for z in range(nspec):
+                                        dif = np.abs(aspec[z,x,y]-med)
+                                        if dif > n*sigma:
                                                 allspec[z,x,y] = med*rows[z,y]
-        
-     		print('Number Zapped is ' + str(nzap))
-  	return allspec
+
+                print('Number Zapped is ' + str(nzap))
+        return allspec
 
 if len(sys.argv) != 3:
     sys.exit('Use python2 [fullzap.py] [planet] [visit]')

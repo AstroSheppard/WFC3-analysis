@@ -11,19 +11,19 @@ from scipy.special import erfinv
 import matplotlib.pyplot as plt
 
 def bad_pixels(data, headers, errors, raws, savefile):
-    """ Used to fix bad pixels, but that's no 
+    """ Used to fix bad pixels, but that's no
     longer an issue with flat field correction.
     Now, this 1) gets aperture and 2) zeros negative
     pixels"""
     n=len(data)
     x=np.zeros(3)                   #[apt,min,max]
-    y=np.zeros(3)  
+    y=np.zeros(3)
     if n > 1:
         ####Find base aperture####
         #x,y=aperture(data[1])
         x,y=ap(data[1])
         #x,y=ap(data[1])
-        
+
         # Use larger aperture to include all light
         update=np.asarray([1,-1,1])
         xl=x+0*update
@@ -61,7 +61,7 @@ def ap(frame):
     #if check_continuity(index):
     #    print "Percent of max flux used for cut-off: %.3f" % per
     #    #break
-        
+
     xmin = np.min(index)
     xmax = np.max(index)
     xapt = (xmax - xmin) / 2
@@ -79,7 +79,7 @@ def ap(frame):
     #if check_continuity(index):
     #    print "Percent of max flux used for cut-off: %.3f" % per
     #    #break
-        
+
     ymin = np.min(index)
     ymax = np.max(index)
     yapt = (ymax - ymin) / 2
@@ -87,22 +87,22 @@ def ap(frame):
     x=np.asarray([xapt,xmin,xmax])
     y=np.asarray([yapt,ymin,ymax])
     return (np.vstack((x,y)))
-    
+
     return low, high
 def aperture(exposure):
     """Given a sample exposure data, return the basic aperture."""
-  
+
     xlen,ylen = exposure.shape
     center=np.zeros(2).astype(int)
     exposure_xcen = exposure[(xlen/2),:]
-    
+
     # Use 10% of max pixel as gauge for edge cutoff
     max_count=np.max(exposure)
     scan = np.where(exposure_xcen > max_count/10.)[0]
-    scan_width = len(scan) 
+    scan_width = len(scan)
     scan_center = int(np.median(scan))
 
-    exposure_ycen = exposure[:,scan_center] 
+    exposure_ycen = exposure[:,scan_center]
     height = np.where(exposure_ycen > max_count/10.)[0]
     scan_height = len(height)
     height_cen=int(np.median(height))
@@ -130,8 +130,8 @@ def pixel_zapping(allspec, plot=False):
     """ Removes bad pixels by comparing each pixel
     to its column's median. This is outdated. No bad pixels
     exist after flat field fix. Keep nloop at 0"""
-    nloop=0                       
-    # Pixels expected to be outside sigma factor in image   
+    nloop=0
+    # Pixels expected to be outside sigma factor in image
     np.place(allspec, allspec<0, 0)
     print('Negative pixels = ', np.sum(allspec<0))
 
@@ -145,7 +145,7 @@ def pixel_zapping(allspec, plot=False):
     # to naturally lie outside the sigma range. I then can correct the pixels
     # outside the sigma range without worry about overcorrecting
 
-    for j in range(nloop):       
+    for j in range(nloop):
         # Take care of any other bad pixels by comparing each pixel to the
         # median of it's own column
         allspec1=allspec.copy()
@@ -170,18 +170,18 @@ def pixel_zapping(allspec, plot=False):
     return allspec
 
 def zapped(allspec):
-        """Input is 3D numpy array of all bkg-removed exposure. 
+        """Input is 3D numpy array of all bkg-removed exposure.
         Median values and sigma cuts are used to remove cosmic rays"""
         #dims=np.empty_like(allspec)
         #aspec=allspec.copy()
         nspec, nspat, nwave = allspec.shape
-  	nloop = [8, 5]                      
-        for sig in nloop:      
+        nloop = [8, 5]
+        for sig in nloop:
             nzap = 0
             # Get row means, exluding top and bottom 15 to ignore CRs
             rows=np.ma.mean(np.sort(allspec, axis=2)[:,:,15:-15],axis=2)
             medians=np.tile(np.ma.median(allspec, axis=0),(nspec, 1,1))
-            
+
             ### Median sigma check
             #sigmas=np.sqrt(np.sum((allspec-medians)*(allspec-medians), axis=0)/(nspec-np.sum(allspec.mask, axis=0)))
             #np.place(sigmas, sigmas==0, 1)
@@ -197,11 +197,11 @@ def zapped(allspec):
                 shift=np.tile(shift, (temp.shape[2],1)).T
                 np.place(shift, shift==0, 1)
                 temp[:,i,:]=temp[:,i,:]/shift
-    
+
             # correct for uneven scan rate before cr check
             row_anom=np.moveaxis(np.tile(rows.anom(axis=0), (nwave,1,1)), 0, 2)
             #row_anom2=np.moveaxis(np.tile(rows2.anom(axis=0), (nwave,1,1)), 0, 2)
-            
+
             sigma=np.tile(temp.std(axis=0), (nspec, 1, 1))
             np.place(sigma, sigma==0, 1)
             crs=temp.anom(axis=0)/sigma
@@ -218,7 +218,7 @@ def zapped(allspec):
 
             uneven_scan_row=np.moveaxis(np.tile(np.abs(rows.anom(axis=0)/rows.std(axis=0))>2.
                                                 , (nwave,1,1)), 0, 2)
-            
+
 
             #plt.imshow(test/np.mean(test))
             #plt.show()
@@ -230,17 +230,17 @@ def zapped(allspec):
             #plt.show()
             #plt.imshow(crs[73,:,:])
             #plt.show()
-  	    #plt.imshow(uneven_scan_row[:,:,1])
+            #plt.imshow(uneven_scan_row[:,:,1])
             #plt.show()
             index=(crs>sig) * (~uneven_scan_row)
             #plt.imshow(index[73,:,:].astype(int))
             #plt.show()
-            nzap=np.ma.sum(index)    
+            nzap=np.ma.sum(index)
             allspec.data[index]=medians[index]
-     	    print('Cosmic rays corrected %d' % nzap)
+            print('Cosmic rays corrected %d' % nzap)
             print('Total pixels %d' % (nspat * nwave))
             print('Percent %.4f' % (100*(nzap + 0.0)/nspat/nwave))
-            
+
         #sss
         return allspec
 

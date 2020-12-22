@@ -7,7 +7,7 @@ from astropy.io import fits
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import fullzap 
+import fullzap
 from bkg import get_data
 
 def flatfield(visit, direction):
@@ -20,7 +20,7 @@ def flatfield(visit, direction):
 
     x1,x2,y1,y2=pd.read_csv('coords.csv'
                             , index_col=0).loc[visit,'Initial Aperture'].values
-    
+
     xd=x2-x1
     yd=y2-y1
 
@@ -55,7 +55,7 @@ def dq(visit, direction, data):
         obs.close()
         dqi=dqi[x1:x2,y1:y2]
         dq_array[i, :,:]=dqi
-   
+
     #dq_array=dq_array[:, 25:47, 42:186]
     #for j in range(dq_array.shape[1]):
     #    plt.plot(dq_array[:,j, 106], label='%d'%j, color='b')
@@ -83,18 +83,18 @@ if __name__=='__main__':
     else:
         plotting=False
         transit=False
-        
+
 
     data, headers, errors, raw=flatfield(visit, direction)
-    
+
     print('flats done')
     mask=dq(visit, direction, data)
     mask=np.broadcast_to(mask, data.shape)
     data=np.ma.array(data, mask=mask)
     cr_data=fullzap.zapped(data)
-    
+
     print('cr done')
     filename = './reduced/'+ visit + '/'+direction+'/final/'
     fullzap.bad_pixels(cr_data, headers, errors, raw, filename)
-    
+
 

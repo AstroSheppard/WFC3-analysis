@@ -12,7 +12,7 @@ sys.path.append('./MCcubed')
 import MCcubed as mc3
 
 def comp_methods(visit, binsize, bin, wave):
-    
+
     modelfile='../bin_analysis/bin_smooth2.csv'
     datafile='../bin_analysis/bin_data2.csv'
     pfile='../bin_analysis/bin_params2.csv'
@@ -22,12 +22,12 @@ def comp_methods(visit, binsize, bin, wave):
     params=params.loc[(visit, binsize, bin, 'Values')]
     smooth=pd.read_csv(modelfile, index_col=[0,1,2]).sort_index()
     smooth=smooth.loc[(visit, binsize, bin)]
-   
+
     margdepth=params['Depth']*1e6
     margflux=data['Norm Flux'].values
     margerror=data['Norm Flux Error'].values
     margnflux=data['Flux'].values
-    margnerror=data['Flux Error'].values  
+    margnerror=data['Flux Error'].values
     margresids=data['Residuals'].values*1e6
     margbinphase=data['Model Phase'].values
     margcor=data['Corrected Flux'].values
@@ -63,7 +63,7 @@ def comp_methods(visit, binsize, bin, wave):
     params=pd.read_csv(pfile, index_col=[0,1,2,3]).sort_index()
     params=params.loc[(visit,binsize, bin, 'Values')]
     mcmcdepth=params['Depth']*1e6
-    
+
     mcmcflux=data['Norm Flux'].values
     mcmcerror=data['Norm Flux Error'].values
     mcmcnflux=data['Flux'].values
@@ -83,7 +83,7 @@ def comp_methods(visit, binsize, bin, wave):
         mcmcnorm=params['Zero-flux'].values[0]
     except AttributeError:
         mcmcnorm=params['Zero-flux']
-   
+
     mcmcmodel=smooth['Model'].values
     mcmcmodelx=smooth['Phase'].values
     mcmc_sys_model=mcmcflux/mcmccor
@@ -120,11 +120,11 @@ def comp_methods(visit, binsize, bin, wave):
     plt.text(.0, 1-0.003, 'Norm dif: %.1f' % ((margnorm-mcmcnorm)*margdepth))
     plt.errorbar(margbinphase, margflux, margerror, color='b', ls='', marker='o',
                  ecolor='b', label='Data')
-    #plt.text(-.2,.998, 'Error ')  
+    #plt.text(-.2,.998, 'Error ')
     plt.legend()
     plt.show()
-    
-    
+
+
     """flat=np.zeros_like(mcmcresids)
     mcmccorerr*=1e6
     margcorerr*=1e6
@@ -141,10 +141,10 @@ def comp_methods(visit, binsize, bin, wave):
     plt.legend()
     plt.show()"""
 
-    
 
 
-    
+
+
 def bin_op(input, size, op='mean'):
     nbins=len(input)/size
     out=np.zeros(nbins)
@@ -170,12 +170,12 @@ def correlated(resids, wave, axes, color):
         #nbins[i]=len(r)
         #rms[i]=np.std(r)
         #error[i]=rms[i]/np.sqrt(2*nbins[i])
-        
+
     #expected=rms[0]/np.sqrt(binsize)*np.sqrt(nbins/(nbins-1))
 
     rms, rmslo, rmshi, expected, binsize=mc3.rednoise.binrms(resids,n)
 
-    
+
     significant=np.where(rms/expected -1 > 2*rmslo/expected)[0]
     print(significant)
     if len(significant) == 0:
@@ -183,7 +183,7 @@ def correlated(resids, wave, axes, color):
     else:
         max_beta = np.max(rms[significant]/expected[significant])
         ind = np.argmax(rms[significant]/expected[significant])
-        print (rms[significant[ind]]/expected[significant[ind]]- 
+        print (rms[significant[ind]]/expected[significant[ind]]-
                rmslo[significant[ind]]/expected[significant[ind]])
 
     ax.plot(binsize, expected/rms[0],color='black', label='Expected')
@@ -191,7 +191,7 @@ def correlated(resids, wave, axes, color):
                 , color=color, label='Data RMS')
     ax.set_xscale('log')
     ax.set_yscale('log')
-   
+
     ax.xaxis.set_major_formatter(ScalarFormatter())
     ax.get_xaxis().get_major_formatter().labelOnlyBase = False
     ax.yaxis.set_major_formatter(ScalarFormatter())
@@ -223,12 +223,12 @@ def adtest(resids, photon_error, norm=False):
   res=np.sort(resids)
   num=np.ones(nres)/nres
   cdf1=np.cumsum(num)
-  
+
   # Case 3: we do not know mean or sigma of distribution. Determine from residuals
   # Test if it is gaussian, just with inflated errors (aka no red noise)
   avg_3=np.mean(res)
   sig_3=np.std(res)
-    
+
   # Case 0: We "know" the distribution is photon noise gaussian centered on 0. Test for accurate noise
   avg_0=0
   sig_0=photon_error
@@ -236,7 +236,7 @@ def adtest(resids, photon_error, norm=False):
   # Normalize (see wikipedia)
   data_0=(res-avg_0)/sig_0
   data_3=(res-avg_3)/sig_3
-  
+
   # Get gaussian CDFs with corresponding mean and sigma
   cdf_0=st.norm.cdf(data_0)
   cdf_3=st.norm.cdf(data_3)
@@ -247,8 +247,8 @@ def adtest(resids, photon_error, norm=False):
   # Get continuous, unnormalized perfectly gaussian residuals for plotting
   gauss_resids_0 = sig_0*gauss + avg_0
   gauss_resids_3 = sig_3*gauss + avg_3
-   
-    
+
+
   # Calculate A-D number
   sum_0=0
   sum_3=0
@@ -257,7 +257,7 @@ def adtest(resids, photon_error, norm=False):
     sum_0+=(2*j-1)*(np.log(cdf_0[j-1])+np.log(1.0-cdf_0[nres-j]))
     sum_3+=(2*j-1)*(np.log(cdf_3[j-1])+np.log(1.0-cdf_3[nres-j]))
     # Then comparison to any gaussian
-    
+
   ad_0=-nres-sum_0/nres
   ad_3=-nres-sum_3/nres
   ad_3*=(1+4./nres-25./nres/nres)
@@ -267,13 +267,13 @@ def adtest(resids, photon_error, norm=False):
   print('Compared to Gaussian: %f' % ad_3)
   print('Shapiro p-value: %f' % shapiro[1])
   print('Pearson p-value: %f' % pearson[1])
-  
+
   return res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf
 
 
 def binpaper(visit, binsize, bin, wave, method='marg'):
 
-  """ This puts all information about quality of fit for 
+  """ This puts all information about quality of fit for
   one visit into a few nice figures.
 
   Right now I toggle correlated/adtest/binpaper plot. In future make these inputs."""
@@ -287,17 +287,17 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
     params=params.loc[(visit, binsize, bin, 'Values')]
     smooth=pd.read_csv(modelfile, index_col=[0,1,2]).sort_index()
     smooth=smooth.loc[(visit, binsize, bin)]
-   
-    
+
+
     flux=data['Norm Flux'].values
     error=data['Norm Flux Error'].values
     nflux=data['Flux'].values
-    nerror=data['Flux Error'].values  
+    nerror=data['Flux Error'].values
     resids=data['Residuals'].values*1e6
     binphase=data['Model Phase'].values
     cor=data['Corrected Flux'].values
     corerr=data['Corrected Flux Error'].values
-    
+
     model=smooth['Model'].values
     modelx=smooth['Phase'].values
     try:
@@ -324,8 +324,8 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
     data=data.loc[(visit, binsize, bin)]
     params=pd.read_csv(pfile, index_col=[0,1,2,3]).sort_index()
     params=params.loc[(visit,binsize, bin, 'Values')]
-    
-    
+
+
     flux=data['Norm Flux'].values
     error=data['Norm Flux Error'].values
     nflux=data['Flux'].values
@@ -342,7 +342,7 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
         norm=params['Zero-flux'].values[0]
     except AttributeError:
         norm=params['Zero-flux']
-   
+
     model=smooth['Model'].values
     modelx=smooth['Phase'].values
     sys_model=flux/cor/norm
@@ -354,15 +354,15 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
     pfile='../bin_analysis/binmcmc_params.csv'
     sfile='../bin_analysis/binmcmc_smooth.csv'
 
-    
+
     binsmooth=pd.read_csv(sfile, index_col=[0,1,2]).sort_index()
     smooth=binsmooth.loc[(visit, binsize, bin)]
     data=pd.read_csv(dfile, index_col=[0,1,2]).sort_index()
     data=data.loc[(visit, binsize, bin)]
     params=pd.read_csv(pfile, index_col=[0,1,2,3]).sort_index()
     params=params.loc[(visit,binsize, bin, 'Values')]
-    
-    
+
+
     flux=data['Norm Flux'].values
     error=data['Norm Flux Error'].values
     nflux=data['Flux'].values
@@ -379,7 +379,7 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
         norm=params['Zero-flux'].values[0]
     except AttributeError:
         norm=params['Zero-flux']
-   
+
     model=smooth['Model'].values
     modelx=smooth['Phase'].values
     sys_model=flux/cor/norm
@@ -403,9 +403,9 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
   plt.xlim([xmin, xmax])
   plt.ylabel('Normalized Flux')
   plt.text(-.02, 1.0, 'Systematics removed')
-  #plt.text(-.2,.998, 'Error ')  
+  #plt.text(-.2,.998, 'Error ')
 
-  
+
   flat=np.zeros_like(resids)
   corerr*=1e6
   plt.subplot(313)
@@ -455,7 +455,7 @@ def binpaper(visit, binsize, bin, wave, method='marg'):
   plt.savefig('bin_resids_cdf.png')"""
 
 def binvis(visit, binsize, wave, method='marg'):
-    
+
     if method=='marg':
         modelfile='../bin_analysis/bin_smooth2.csv'
         datafile='../bin_analysis/bin_data2.csv'
@@ -473,7 +473,7 @@ def binvis(visit, binsize, wave, method='marg'):
         #flux=data['Norm Flux'].values
         #error=data['Norm Flux Error'].values
         #nflux=data['Flux'].values
-        #nerror=data['Flux Error'].values  
+        #nerror=data['Flux Error'].values
         #resids=data['Residuals'].values*1e6
         fig = plt.figure(figsize=(7, 12))
         colors = iter(cm.inferno(np.linspace(0.1, .8, len(spec))))
@@ -487,7 +487,7 @@ def binvis(visit, binsize, wave, method='marg'):
             c = next(colors)
             dat = data.loc[start_bin]
             smoo = smooth.loc[start_bin]
-        
+
             binphase=dat['Model Phase'].values
             cor=dat['Corrected Flux'].values
             corerr=dat['Corrected Flux Error'].values
@@ -518,7 +518,7 @@ def binvis(visit, binsize, wave, method='marg'):
             plt.text(.045, 1.002-i*con, r'%.2f$\mu$m' % wave[start_bin], color=c)
             plt.text(-.06, 1.002-i*con, r'$\chi^2_{red}$=%.2f' % rchi2, color=c)
             start_bin += 1
-    
+
         plt.savefig('../../hat41_bincurves1.pdf')
         #plt.show()
     elif method=='mcmc':
@@ -531,8 +531,8 @@ def binvis(visit, binsize, wave, method='marg'):
         data=data.loc[(visit, binsize)]
         params=pd.read_csv(pfile, index_col=[0,1,2,3]).sort_index()
         params=params.loc[(visit,binsize, 'Values')]
-        
-    
+
+
         flux=data['Norm Flux'].values
         error=data['Norm Flux Error'].values
         nflux=data['Flux'].values
@@ -549,7 +549,7 @@ def binvis(visit, binsize, wave, method='marg'):
             norm=params['Zero-flux'].values[0]
         except AttributeError:
             norm=params['Zero-flux']
-   
+
         model=smooth['Model'].values
         modelx=smooth['Phase'].values
         sys_model=flux/cor/norm
@@ -564,7 +564,7 @@ def binvis(visit, binsize, wave, method='marg'):
             c = next(colors)
             dat = data.loc[bin]
             smoo = smooth.loc[bin]
-        
+
             binphase=dat['Model Phase'].values
             cor=dat['Corrected Flux'].values
             corerr=dat['Corrected Flux Error'].values
@@ -595,7 +595,7 @@ def binvis(visit, binsize, wave, method='marg'):
             plt.text(.03, 1.00012-i*con, r'%.2f$\mu$m' % wave[bin], color=c)
             plt.text(-.05, 1.0005-i*con, r'$\chi^2_{red}$=%.2f' % rchi2, color=c)
             bin += 1
-    
+
         #plt.savefig('../../l9859c_bincurves.pdf')
         plt.show()
 
@@ -616,8 +616,8 @@ def binvis(visit, binsize, wave, method='marg'):
         data=data.loc[(visit, binsize, bin)]
         params=pd.read_csv(pfile, index_col=[0,1,2,3]).sort_index()
         params=params.loc[(visit,binsize, bin, 'Values')]
-        
-    
+
+
         flux=data['Norm Flux'].values
         error=data['Norm Flux Error'].values
         nflux=data['Flux'].values
@@ -634,21 +634,21 @@ def binvis(visit, binsize, wave, method='marg'):
             norm=params['Zero-flux'].values[0]
         except AttributeError:
             norm=params['Zero-flux']
-   
+
         model=smooth['Model'].values
         modelx=smooth['Phase'].values
         sys_model=flux/cor/norm
         full_model=flux-resids*norm/1e6
         xmin=np.min(binphase)-0.02
         xmax=np.max(binphase)+.02
-        
+
 
 
     #plt.subplot(312)
 
-    #plt.text(-.2,.998, 'Error ')  
-    
-  
+    #plt.text(-.2,.998, 'Error ')
+
+
     """ flat=np.zeros_like(resids)
     corerr*=1e6
     plt.subplot(313)
@@ -659,15 +659,15 @@ def binvis(visit, binsize, wave, method='marg'):
     plt.ylabel('Obs - Model [ppm]')
     plt.plot(binphase, flat)
     plt.text(-.23, np.max(resids), 'Residuals')
-    
+
     std_res=np.std(resids)
     std_err=std_res/np.sqrt(2*len(resids))
     ratio=std_res/photon_error
     # ''photon error'' is really theory limit for bins, and should be same as flux_error/flux*1e6
-    
+
     #plt.text(-.2,np.min(resids)+100, 'RMS: %03d +- %03d' % (std_res, std_err))
     plt.text(.01,np.min(resids)+100, 'RMS/photon: %.3f +- %.3f' % (ratio, std_err/photon_error))"""
-    
+
     #plt.title('%.03f $\mu$m' % wave, size=12)
     #plt.savefig('bin_lightcurves'+method+'.png')
     savename='binpaper_'+visit.replace('/','_')+'_'+method+'.pdf'
@@ -675,8 +675,8 @@ def binvis(visit, binsize, wave, method='marg'):
     #f.savefig(savename)
     #f.clf()
     #plt.close(f)
-    #plt.savefig('bin_resids_cdf'+method+'.png')  
-  
+    #plt.savefig('bin_resids_cdf'+method+'.png')
+
 if __name__=='__main__':
     visit=sys.argv[1]+'/'+sys.argv[2]+'/'+sys.argv[3]
     binsize=int(sys.argv[4])
@@ -708,7 +708,7 @@ if __name__=='__main__':
     #for i in range(nbin):
     #    print i
 
-    
+
     #binvis(visit, binsize, spec, method='marg')
     #comp_methods(visit, binsize, bin, wave)
     #sys.exit()
@@ -717,7 +717,7 @@ if __name__=='__main__':
 
     #datafile='../bin_analysis/binmcmc_data.csv'
     #pfile='../bin_analysis/binmcmc_params.csv'
-    
+
     marg=pd.read_csv(datafile, index_col=[0,1,2]).sort_index()
     marg=marg.loc[(visit, binsize)]
 
@@ -740,12 +740,12 @@ if __name__=='__main__':
     # Get free params
     params=pd.read_csv(pfile, index_col=[0,1,2,3]).sort_index()
     params=params.loc[(visit, binsize)]
-   
+
     for i, ax in enumerate(np.ravel(axes)):
         if i == len(spec):
             #ax.set_xscale('log')
             #ax.set_yscale('log')
-   
+
             #ax.xaxis.set_major_formatter(ScalarFormatter())
             #ax.get_xaxis().get_major_formatter().labelOnlyBase = False
             #ax.yaxis.set_major_formatter(ScalarFormatter())
@@ -769,12 +769,12 @@ if __name__=='__main__':
         print('Chi squared:  %.2f' % chi2)
         print('Reduced Chi squared:  %.2f' % rchi2)
         print('DOF:  %d' % dof)
-        
+
         wave=spec[i]
         adtest(mresids, phot_error/1e6)
         beta[i]=correlated(mresids, wave, ax, next(colors))
-    
-  
+
+
     name='rednoise_'+visit.replace('/','_')+'_marg.pdf'
     name = '../../rednoise_'+visit.replace('/','_')+'_marg.pdf'
     axes[0,0].legend()
@@ -793,7 +793,7 @@ if __name__=='__main__':
     print(beta)
     print(np.mean(beta))
     print(np.median(beta))
-    
+
     rspec=sp.loc[(visit, 'ramp', binsize), 'Central Wavelength'].values
     rwave=rspec[bin]
     ramp=pd.read_csv(rampfile, index_col=[0,1,2]).sort_index()
@@ -834,8 +834,3 @@ if __name__=='__main__':
     sys.exit()
     sp.loc[(visit, 'ramp', binsize), 'Beta Max']=beta
     sp.to_csv('../bin_analysis/spectra.csv', index_label=['Obs', 'Method', 'Bin Size'])
-
-
-
-
-

@@ -19,7 +19,7 @@ import bin_ramp_mcmc as mcmc
 
 def binfit(visit
            , width = 6
-           , save = False 
+           , save = False
            , method = 'marg'
            , shift = 0
            , include_first_orbit = True
@@ -43,30 +43,30 @@ def binfit(visit
   if method=='marg':
     proc=white+'processed_data.csv'
     pre=pd.read_csv(white+'preprocess_info.csv', index_col=0).loc[orig]
-    df=pd.read_csv(proc, index_col=[0,1]).loc[orig] 
+    df=pd.read_csv(proc, index_col=[0,1]).loc[orig]
 
     first = pre['User Inputs'].values[-2].astype(int)
     last = pre['User Inputs'].values[-1].astype(int)
     adj = 0
-    
+
     if include_first_orbit == True:
       adj = first
       first = 0
-    
+
     transit=df['Transit'].values[0]
     date=df.loc['Value','Date'].values
     spectra=df.loc['Value'].iloc[:,1:-2].dropna(axis=1).values
     spec_err=df.loc['Error'].iloc[:,1:-2].dropna(axis=1).values
     sh=df.loc['Value','sh'].values
     dir_array=df.loc['Value','Scan Direction'].values
-    
+
     date = date[first:]
     spectra = spectra[first:]
     spec_err = spec_err[first:]
     sh = sh[first:]
     dir_array=dir_array[first:]
-    
-    
+
+
     # Second, read in system parameters that are possibly determined by whitelight fit
     syst=pd.read_csv(white+'wl_data.csv', index_col=[0,1]).loc[visit]
     depth_start=syst.loc['Marg Depth', 'Values']
@@ -75,7 +75,7 @@ def binfit(visit
     best_inc=syst.loc['Inc','Values']
     best_ar=syst.loc['ar', 'Values']
     #best_ar=5.44
-    norm1 = syst.loc['Norm index1', 'Values'].astype(int) + adj 
+    norm1 = syst.loc['Norm index1', 'Values'].astype(int) + adj
     norm2 = syst.loc['Norm index2', 'Values'].astype(int) + adj
     scale= syst.loc['Error Scaling', 'Values']
     y=spectra.sum(axis=1)
@@ -83,17 +83,17 @@ def binfit(visit
     wlerrors=scale*np.sqrt(np.sum(spec_err*spec_err, axis=1))/norm
 
 
-    params=pd.read_csv(white+'system_params.csv', index_col=0).loc[orig,'Properties'].values 
+    params=pd.read_csv(white+'system_params.csv', index_col=0).loc[orig,'Properties'].values
     period=params[4]
     #period = params[]
     #period = limbs[4]
     #c1, c2 = limbs[6:8]
-    
+
     if transit == False:
       rprs = params[0]
     else:
       rprs=np.sqrt(depth_start)
-    
+
   if method == 'ramp' or method == 'mcmc':
     proc=white+'processed_ramp.csv'
     pre=pd.read_csv(white+'preprocess_ramp_info.csv', index_col=0).loc[visit]
@@ -103,7 +103,7 @@ def binfit(visit
     date=df.loc['Value','Date'].values
     spectra=df.loc['Value'].iloc[:,1:-1].values
     spec_err=df.loc['Error'].iloc[:,1:-1].values
-    
+
     # Second, read in system parameters that are possibly determined by whitelight fit
     syst=pd.read_csv(white+'wl_ramp_params.csv', index_col=[0,1]).loc[visit,'Values']
     depth_start=syst['Depth']
@@ -111,7 +111,7 @@ def binfit(visit
     best_inc=syst['inc']
     best_ar=syst['ar']
     norm1 = syst['Norm index1'].astype(int)
-    norm2 = syst['Norm index2'].astype(int) 
+    norm2 = syst['Norm index2'].astype(int)
     #c1 = syst['c1']
     #c2 = syst['c2']
     period = syst['Period']
@@ -119,8 +119,8 @@ def binfit(visit
       rprs = syst['rprs']
     else:
       rprs=pd.read_csv(white+'system_params.csv', index_col=0).loc[visit,'Properties'].values[0]
-  
-    
+
+
   # Set all inputs to appropriate priors
   inputs=np.zeros(10)
   inputs[0]=rprs
@@ -135,7 +135,7 @@ def binfit(visit
   wave_file = orig
   #wave_file = 'l9859c/visit00/forward'
   wavelength=pd.read_csv(white + 'wave_sol/wave_solution.csv'
-                         , index_col=0).loc[wave_file,'Wavelength Solution [A]'].values 
+                         , index_col=0).loc[wave_file,'Wavelength Solution [A]'].values
 
   ##### Now we have all necessary data #####
   # Determine bin size an allocate pixels to appropriate wavelength bins
@@ -160,7 +160,7 @@ def binfit(visit
     print(wavelength[n1]/1e4, wavelength[n2]/1e4)
 
 
-  
+
   ### get limb darkening non-linear coeff to be fixed for each bin
   # planet=orig[:-16] # change back to visit from orig
   planet=orig.split('/')[0]
@@ -172,7 +172,7 @@ def binfit(visit
   a4=get_limb(planet, center, 'a4', load=load)
 
   # depending on method and save, I go through each bin, get the count, get the photon error
-  # get depth, error, photon error, stddev(resids), count 
+  # get depth, error, photon error, stddev(resids), count
   residuals=np.zeros(4)
   resids=np.zeros(nbins)
   depth=np.zeros(nbins)
@@ -183,26 +183,26 @@ def binfit(visit
 
   #if save == True:
     #print 'a'
-    ### ignore for now 
+    ### ignore for now
     # for i in range(nbins):
     #     print, 'bin' + i
     #     binned_spectra=bins[i,:,:]
     #     count[i]=np.median(np.sum(binned_spectra, axis=1))
     #     if method == 'ramp':
-    #       savename='./spectra_april/models/resids/' + inp_file + STRING(i, format='(I02)') 
+    #       savename='./spectra_april/models/resids/' + inp_file + STRING(i, format='(I02)')
     #     if method == 'marg':
     #       cen=center[i]
-    #       savename='./paper/bincurve/' + inp_file + STRING(i, format='(I02)') 
+    #       savename='./paper/bincurve/' + inp_file + STRING(i, format='(I02)')
     #       results = marg(inputs, date, binned_spectra, first_orbit_size
     #                                 , inp_file, first, cc, hst , cen, SAVEFILE=savename)
-      
+
     #     depth_array2[i,0]=results[0]
     #     depth_array2[i,1]=results[1]
     #     r[i]=results[2]
     ###
     #sys.exit('hello')
   #else:
-  
+
   if betas is None: betas=np.ones(nbins)
   for i in range(nbins):
     binned_spectra=bins[i,:,:]
@@ -212,10 +212,10 @@ def binfit(visit
                             np.median(np.sum(binned_spectra, axis=1)))*1e6
     flux_error_test[i]=np.median(np.sqrt(np.ma.sum(binned_error*binned_error, axis=1))/
                                  np.sum(binned_spectra, axis=1))*1e6
-  
-  
+
+
     beta=betas[i]
-  
+
     if method == 'ramp':
       inputs[6:] = a1[i],a2[i],a3[i],a4[i]
       light=np.sum(binned_spectra, axis=1)
@@ -224,7 +224,7 @@ def binfit(visit
       p2=p1+width
       pix=(p1,p2)
       intrinsic_count = intrinsic(date, light, raw, pixels=pix)/exptime
-      depth[i], error[i], resids[i]=ramp.binramp(inputs, date, binned_spectra, binned_error 
+      depth[i], error[i], resids[i]=ramp.binramp(inputs, date, binned_spectra, binned_error
                                                  , intrinsic_count, exptime, visit, width, beta
                                                  , plotting=False, transit=transit, save=save
                                                  , nbin='%02d' % i)
@@ -236,13 +236,13 @@ def binfit(visit
       p2=p1+width
       pix=(p1,p2)
       intrinsic_count = intrinsic(date, light, raw, pixels=pix)/exptime
-    
-      depth[i], error[i], resids[i]=mcmc.binramp(inputs, date, binned_spectra, binned_error 
+
+      depth[i], error[i], resids[i]=mcmc.binramp(inputs, date, binned_spectra, binned_error
                                                  , intrinsic_count, exptime, visit, width, beta
                                                  , plotting=False, transit=transit, save=save, nbin='%02d' % i)
-                                                
+
     if method == 'marg':
-      
+
       inputs[6:] = a1[i],a2[i],a3[i],a4[i]
       #depth[i], error[i], resids[i] = marg.marg(inputs, date, binned_spectra, binned_error
       #                                          , norm1, norm2, visit, width, beta, wlerrors
@@ -258,7 +258,7 @@ def binfit(visit
                                                     , include_residuals = include_residuals
                                                     , include_error_inflation = include_error_inflation
                                                     , transit=transit, save=save, nbin='%02d' % i)
-  
+
 
   photon_err=1e6/np.sqrt(count)
   residuals[0]=np.median(resids)
@@ -268,7 +268,7 @@ def binfit(visit
   depth*=1e6
   residuals[3], residuals[2]=wmean(depth, error)
   spread=np.zeros_like(center) + (center[1] - center[0])/2.
-  
+
   print("Ratio of resids to photon error:", (resids/photon_err))
   print("Median ratio of resids to photon error: %.2f" % np.median(resids/photon_err))
   print("Mean ratio of resids to photon error: %.2f" % np.mean(resids/photon_err))
@@ -285,17 +285,17 @@ def binfit(visit
   if save == True:
 
     #  if method == 'ramp':
-    #    savename2='./spectra_april/'+inp_file 
-    
+    #    savename2='./spectra_april/'+inp_file
+
     #  if method == 'marg':
     #    savename2='./spectra_april/'+inp_file + 'adj'
-    
+
     #ratio=residuals[0]/photon_err
     # index=np.where(ratio < 1.5)
     # ;   center=center[index]
     # ;   depth=depth[index]
     # ;   error=error[index]
-     
+
     #plt.errorbar(center, depth, error, fmt='o', ls='', color='b', ecolor='b')
     #plt.show()
     # save, filename='resids.sav', r, photon_err
@@ -309,15 +309,15 @@ def binfit(visit
     # Index will be visit, bin size, and method.  Columns are depth, depth error, wavelenth range (2),
     # rms/theory err, rms, theory err, photon-limited error  9 x nbins, labeled my binsize, method, obs
 
-    
+
     cols=['Central Wavelength', 'Wavelength Range', 'Depth', 'Error'
           , 'RMS/Theory', 'RMS', 'Theory', 'Photon Error']
 
     if method == 'marg':
       method = 'marg' + str(int(include_first_orbit)) + str(int(include_residuals)) \
                + str(int(include_wl_adjustment)) + str(int(include_error_inflation))
-      
-    
+
+
     data=np.vstack((center/1e4, spread/1e4, depth, error,resids/flux_error, resids, flux_error, photon_err)).T
     spec=pd.DataFrame(data, columns=cols)
     spec['Visit']=visit
@@ -334,7 +334,7 @@ def binfit(visit
     except IOError:
       spec.to_csv('./spectra.csv', index_label=['Obs', 'Method', 'Bin Size'])
 
-    
+
   return center, depth, error, resids, spread
 
 
@@ -373,7 +373,7 @@ if __name__ == '__main__':
                                 , include_wl_adjustment = True
                                 , include_error_inflation= True
                                 , save=True)
-    
+
     """cen=pd.read_csv('spectra.csv', index_col=[0,1,2]).loc[(visit,'marg3',4)]
     center5=cen['Central Wavelength'].values
     spread5=cen['Wavelength Range'].values
@@ -390,7 +390,7 @@ if __name__ == '__main__':
     spread3=cen['Wavelength Range'].values
     depth3=cen['Depth'].values
     error3=cen['Error'].values"""
-    
+
     cen=pd.read_csv('spectra.csv', index_col=[0,1,2]).loc[(visit,'marg0011',10)]
     center3=cen['Central Wavelength'].values
     spread3=cen['Wavelength Range'].values
@@ -431,7 +431,7 @@ if __name__ == '__main__':
     #avi.to_csv('../../l9859c_spectra_0925_10pixel.csv')
 
 
-    
+
     #plt.errorbar(center5, depth5, error5,xerr=spread5, fmt='o', color='r', ecolor='r'
     #             , ls='', label='4 pixel no resids')
     #plt.errorbar(center4*1e4, depth4, error4,xerr=spread4*1e4, fmt='o', color='r', ecolor='r'
@@ -492,7 +492,7 @@ if __name__ == '__main__':
     plt.legend(numpoints=1)
     plt.show()
     sys.exit()
-    
+
     sav=readsav('nik.sav')
     lamb=sav.WAV_CEN_ANG*1e4
     lamb_err=sav.ERR_WAV_ANG*1e4
@@ -506,11 +506,11 @@ if __name__ == '__main__':
     terror=df['error'].values
     plt.errorbar(twave, tdepth, terror, fmt='o', color='purple'
                  , ecolor='purple', ls='', label='Tsarias')
-    
+
     plt.legend(numpoints=1)
     plt.show()
     sys.exit()
     #plt.savefig('avi.png')
     plt.show()
-    
-    
+
+

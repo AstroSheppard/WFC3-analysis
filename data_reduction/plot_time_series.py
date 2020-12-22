@@ -25,28 +25,28 @@ def plot_time_series(visit
                      , ploton=True
                      , check=True):
 
-    """ 
-    PURPOSE: Allow user to e xtract relevant orbital data from reduced time 
-    series of a visit. Also allow user to exclude any outlier data points. 
-    
+    """
+    PURPOSE: Allow user to e xtract relevant orbital data from reduced time
+    series of a visit. Also allow user to exclude any outlier data points.
+
     INPUTS
 
      x, y, allow the user to reduce aperture
      checks: set to "on" to manually reduce data
 
      If checks is set to on, "user_inputs" will return the inputs
-     that the user used: [first orbit, last orbit, sigma cut factor, 
+     that the user used: [first orbit, last orbit, sigma cut factor,
      number of passes, center eclipse time]. If checks is set to off, then
      the user_inputs array will be used as inputs (easier to automate) """
- 
+
     folder = '../data_reduction/reduced/%s/%s/final/*.fits' % (visit, direction)
     data=np.sort(np.asarray(glob.glob(folder)))
     nexposure = len(data)
     print('There are %d exposures in this visit' % nexposure)
 
     alldate=np.zeros(len(data))
-    time=np.zeros_like(alldate) 
-    
+    time=np.zeros_like(alldate)
+
     test=fits.open(data[0])
     xlen, ylen = test[0].data.shape
     test.close()
@@ -54,7 +54,7 @@ def plot_time_series(visit
     ylen-=2*y
     allspec=np.ma.zeros((len(data),xlen, ylen))
     allerr=np.zeros((len(data),xlen,ylen))
-    
+
     xmin=x
     xmax=xlen-x
     ymin=y
@@ -66,7 +66,7 @@ def plot_time_series(visit
         exp=expfile[0].data
         mask=expfile[1].data
         errs=expfile[2].data
-        expfile.close() 
+        expfile.close()
         alldate[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
         time[i]=hdr['EXPTIME']
         expo=exp[xmin:xmax, ymin:ymax]
@@ -80,8 +80,8 @@ def plot_time_series(visit
     alldate=alldate[date_order]
     allspec=allspec[date_order,:,:]
     allerr=allerr[date_order,:,:]
-    
-    # Classify the data by each HST orbit. Returns array (orbit) 
+
+    # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
     orbit=get_orbits(alldate)
@@ -90,7 +90,7 @@ def plot_time_series(visit
 
     # Choose which orbits to include in the eclipse fitting. 1-2 on either
     # side of the eclipse is recommended
-    
+
     check2=check
 
     if check == True:
@@ -113,7 +113,7 @@ def plot_time_series(visit
 
             allspec1d=np.ma.sum(allspec,axis=1).data
             allerr1d=np.sqrt(np.ma.sum(allerr*allerr, axis=1)).data
-            
+
             first_data = orbit[first_orbit]
             last_data=orbit[last_orbit+1]
             date=alldate[first_data:last_data]
@@ -124,20 +124,20 @@ def plot_time_series(visit
             light = np.ma.sum(spec1d,axis=1)
             lighterr=np.sqrt(np.ma.sum(err1d*err1d, axis=1))
             user_inputs[5], user_inputs[6] = first_data, last_data
-            
+
             if ploton==True:
                 plt.errorbar(date, light/max(light),lighterr/max(light),fmt='o')
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
-                
+
             ans = raw_input("Is this correct? (Y/N): ")
             if ans.lower() in ['y','yes']: check2=False
             if ploton==True:
                 pass
 
 if __name__=='__main__':
-    
+
     if len(sys.argv) != 4:
         sys.exit('Format: preprocess_whitelight.py [planet] [visit] [direction]')
     visit=sys.argv[1]+'/'+sys.argv[2]

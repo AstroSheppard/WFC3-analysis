@@ -17,12 +17,12 @@ def wlresids(visit, transit=False):
     pre=pd.read_csv('preprocess_info.csv', index_col=0).loc[visit]
     #visit = 'no_inflation_hatp41'
     white=pd.read_csv('wl_data.csv', index_col=[0,1]).loc[visit]
-   
+
     first = pre['User Inputs'].values[-2].astype(int)
     last = pre['User Inputs'].values[-1].astype(int)
     norm1 = white.loc['Norm index1', 'Values'].astype(int) + first
     norm2 = white.loc['Norm index2', 'Values'].astype(int) + first
-    
+
     # READ IN ALL PROCESSED DATA
     proc='processed_data.csv'
     df=pd.read_csv(proc, index_col=[0,1]).loc[orig] # back to visit
@@ -32,14 +32,14 @@ def wlresids(visit, transit=False):
     date=df.loc['Value','Date'].values
     dir_array=df.loc['Value','Scan Direction'].values
     nexposure=len(date)
-    
+
     # folder = '../data_reduction/reduced/%s/final/*.fits' % visit
     # data=np.sort(np.asarray(glob.glob(folder)))
     # nexposure = len(data)
     # folder = '../reduced/' + visit + '/final/*.fits'
     # date=np.zeros(nexposure)
     # test=fits.open(data[0])
-    
+
     # xlen, ylen = test[0].data.shape
     # test.close()
     # x,y=0,0
@@ -60,7 +60,7 @@ def wlresids(visit, transit=False):
     #     exp=expfile[0].data
     #     mask=expfile[1].data
     #     errs=expfile[2].data
-    #     expfile.close() 
+    #     expfile.close()
     #     date[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
     #     expo=exp[xmin:xmax, ymin:ymax]
     #     mask=mask[xmin:xmax, ymin:ymax]
@@ -72,15 +72,15 @@ def wlresids(visit, transit=False):
     # date=date[date_order]
     # expos=allspec[date_order,:,:]
     # allerr=allerr[date_order,:,:]
-  
-    #date=date[first:last]          
+
+    #date=date[first:last]
     #expos=allspec[first:last,:,:]
     #allerr=allerr[first:last,:,:]
    # spec=np.ma.sum(expos,axis=1)
    # specerr=np.sqrt(np.ma.sum(allerr*allerr, axis=1))
     flux = np.sum(spec,axis=1)
     err=np.sqrt(np.sum(specerr*specerr, axis=1))
-    
+
     testbin=spec[:,50:60]
     testbinerr=specerr[:,50:60]
     binflux=np.ma.sum(testbin, axis=1)
@@ -96,14 +96,14 @@ def wlresids(visit, transit=False):
 
     #CALCULATE THE SHIFT IN DELTA_lambda
     sh = wl.get_shift(spec)
-    
+
     # READ IN SYSTEMATIC MODEL PARAMETERS for all models FROM WHITELIGHT FIT
 
     models_df = pd.read_csv('wl_models_info.csv', index_col=[0,1]).loc[visit].dropna(axis=1)
     params=models_df.loc['Params'].values[:,:-1].T
     nModels=params.shape[0]
 
-    
+
     # CALCULATE HST PHASE AT EACH TIME
     HSTper = 96.36 / (24.*60.)
     HSTphase = (date-date[first])/HSTper
@@ -136,14 +136,14 @@ def wlresids(visit, transit=False):
         per=par[16]
         t=par[1]
         # SAVE RESIDUALS
-        
+
         #plt.clf()
         #plt.plot(date[norm1:], 1-resids[norm1:], 'ro',label='Model - Data')
         #plt.plot(date[norm1:], fluxnorm[norm1:], 'bs', label='Normalized Flux')
         #plt.plot(date[norm1:], model[norm1:], marker='x', ls='', label='Model')
         #plt.legend(numpoints=1)
     #plt.show()
-    phase = (date-t)/per 
+    phase = (date-t)/per
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
@@ -153,7 +153,7 @@ def wlresids(visit, transit=False):
     wlresids['Transit']=transit
     wlresids['Scan Direction']=dir_array
     wlresids=wlresids.set_index(['Visit', 'Transit'])
-    
+
     try:
         cur=pd.read_csv('./wlresiduals.csv', index_col=[0,1])
         cur=cur.drop((visit, transit), errors='ignore')

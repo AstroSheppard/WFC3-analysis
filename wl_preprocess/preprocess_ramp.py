@@ -25,7 +25,7 @@ def get_data(visit, x, y, get_raw=0):
 
     date=np.zeros(len(data))
     icount=np.zeros_like(date)
-    
+
     test=fits.open(data[0])
     xlen, ylen = test[0].data.shape
     test.close()
@@ -34,7 +34,7 @@ def get_data(visit, x, y, get_raw=0):
     alldata=np.ma.zeros((len(data),xlen, ylen))
     allerr=np.zeros((len(data),xlen,ylen))
     allraw=allerr.copy()
-    
+
     xmin=x
     xmax=xlen-x
     ymin=y
@@ -47,7 +47,7 @@ def get_data(visit, x, y, get_raw=0):
         mask=expfile[1].data
         errs=expfile[2].data
         raws=expfile[3].data
-        expfile.close() 
+        expfile.close()
         date[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
         icount[i]=hdr['COUNT']
         exptime=hdr['EXPTIME']
@@ -70,14 +70,14 @@ def get_data(visit, x, y, get_raw=0):
         return allraw, exptime
     else:
         return date, icount, alldata, allerr, allraw, exptime
-    
-    
-    
+
+
+
 def event_time(date, properties):
     """Program to determine the expected event time
      Inputs
      date: 1D array of the date of each exposure (MJD)
-     properties: 1D array containing the last observed eclipse 
+     properties: 1D array containing the last observed eclipse
      and the period. (MJD, days)"""
     time=properties[1]
     period=properties[4]
@@ -97,12 +97,12 @@ def get_orbits(date):
 
 def inputs(data, transit=True):
 
-    """ Function to read in priors for a system. 
+    """ Function to read in priors for a system.
     INPUTS:
     data: data table of priors for a particular planet
     OUTPUTS:
     Returns array of system properties: [rprs, central event time, inc
-    ,a/r, period, depth] 
+    ,a/r, period, depth]
     """
     inp_values=pd.read_table(data,sep=' ')
     data_arr=inp_values.iloc[:,2].values
@@ -124,7 +124,7 @@ def inputs(data, transit=True):
     else:
         epoch=data_arr[6]+conversions[3]+period/2.
         depth = rprs*rprs*(data_arr[2]/data_arr[3])/3
-        
+
     props=np.zeros(6)
     props[0]=rprs
     props[1]=epoch
@@ -158,12 +158,12 @@ def intrinsic(date, light, raw, pixels=0):
     else:
         raw_img=np.median(raw[begin:end,:,pixels[0]:pixels[1]])
     intrinsic=np.median(raw_img)
-   
+
     return intrinsic
 
 
 # def correction(inputs, date, flux, transit=False):
-    
+
 #     params=batman.TransitParams()
 #     params.w=90.
 #     params.ecc=0
@@ -190,15 +190,15 @@ def intrinsic(date, light, raw, pixels=0):
 #         params.u=[]
 #         params.limb_dark="uniform"
 #         m=batman.TransitModel(params, date, transittype="secondary")
-#         model=m.light_curve(params) 
-       
+#         model=m.light_curve(params)
+
 #     corrected=flux/model
 #     return corrected
 
 
 # def remove_bad_data(light_corrected, date1, user_inputs, check=False):
 #     """Procedure to remove "bad" data from light curve"""
- 
+
 #     med= np.ma.median(light_corrected)
 #     sigma = np.sqrt(np.sum((light_corrected-med)**2)/(2*len(light_corrected)))
 #     medi=np.zeros_like(date1)+med
@@ -230,9 +230,9 @@ def intrinsic(date, light, raw, pixels=0):
 #         sigma_cut_factor = float(cut)
 #         user_inputs[2]=sigma_cut_factor
 #         plt.close()
-  
+
 #     Cut out the "bad" data
- 
+
 #     med= np.ma.median(light_corrected)
 #     sigma = np.sqrt(np.sum((light_corrected-med)**2)/(2*len(light_corrected)))
 #     dif= np.abs(light_corrected-med)
@@ -245,17 +245,17 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
                           , check=True, inp_file=False, savedata=False
                           , transit=False):
 
-    """ 
-    PURPOSE: Allow user to e xtract relevant orbital data from reduced time 
-    series of a visit. Also allow user to exclude any outlier data points. 
-    
+    """
+    PURPOSE: Allow user to e xtract relevant orbital data from reduced time
+    series of a visit. Also allow user to exclude any outlier data points.
+
     INPUTS
 
      x, y, allow the user to reduce aperture
      checks: set to "on" to manually reduce data
 
      If checks is set to on, "user_inputs" will return the inputs
-     that the user used: [first orbit, last orbit, sigma cut factor, 
+     that the user used: [first orbit, last orbit, sigma cut factor,
      number of passes, center eclipse time]. If checks is set to off, then
      the user_inputs array will be used as inputs (easier to automate) """
 
@@ -273,7 +273,7 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
     props_hold=props.copy()
     orbit = np.zeros(1)
 
-    # Classify the data by each HST orbit. Returns array (orbit) 
+    # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
     orbit=get_orbits(date)
@@ -288,7 +288,7 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
             df=pd.read_csv('./preprocess_info.csv')
             df=df[df.loc[:,'Transit']==transit]
             user_inputs=df.loc[visit+direction,'User Inputs'].values
-        else: 
+        else:
             sys.exit('Either allow checking or give csv file with pd info.')
 
         first_orbit=user_inputs[0]
@@ -325,20 +325,20 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
             allerr1=allerr[orbit[first_orbit]:orbit[last_orbit+1],:,:]
             allraw1=allraw[orbit[first_orbit]:orbit[last_orbit+1],:,:]
             # date1=date[first_orbit:last_orbit-1]
-            # allspecextract1=allspecextract[first_orbit:last_orbit-1,:,:] 
+            # allspecextract1=allspecextract[first_orbit:last_orbit-1,:,:]
             # STOP, 'change eclipse2017 back to orbit'
-        
+
             allspec=np.ma.sum(alldata1,axis=1)
             specerr=np.sqrt(np.sum(allerr1*allerr1, axis=1))
             light = np.ma.sum(allspec,axis=1)
             lighterr=np.sqrt(np.sum(specerr*specerr, axis=1))
-            
+
             if ploton==True:
                 plt.errorbar(date1, light/max(light),lighterr/max(light),fmt='o')
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
-                
+
             ans = raw_input("Is this correct? (Y/N): ")
             if ans.lower() in ['y','yes']: check2=False
             if ploton==True:  plt.close()
@@ -350,12 +350,12 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
     #  We are only interested in scatter within orbits, so correct for flux
     #  between orbits by setting the median of each orbit to the median of
     #  the first orbit
-    
+
     # light_corrected=correction(props, date1, light, transit)
 
     # Do a 4-pass sigma cut. 3-5 sigma is ideal. Change n to see how data
     # is affected. A sigma of 3, 4, or 5 could be used, it depends on the
-    # data 
+    # data
     # light1=light.copy()
     # lighterr1=lighterr.copy()
     # allspec1=allspec.copy()
@@ -386,10 +386,10 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
     #         date1=date2.copy()
     #         light_corrected=light_corrected1.copy()
     #         icount=icount1.copy()
-            
+
     #         This performs the sigma cut and returns input for the fitter: a
     #         double array which contains a spectra for each data point
-            
+
     #         index = remove_bad_data(light_corrected, date1, user_inputs, check=check)
     #         light=light[index]
     #         date1=date1[index]
@@ -408,7 +408,7 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
     #         ans2=raw_input('This is the new data, with the red points removed. Is this okay? (Y/N): ')
     #         if ploton==True: plt.close()
     #         if ans2.lower() in ['y','yes']: check=False
-    
+
     if transit==True:
         fixtime=False
         norandomt=True
@@ -443,19 +443,19 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
         processed_data['Date']=np.append(date1, date1)
         processed_data['Transit']=transit
 
-        
+
         sys_p=pd.DataFrame(np.vstack((props_hold, errs)).T, columns=['Properties'
                                                                  , 'Errors'])
         sys_p['Visit']=visit
         sys_p=sys_p.set_index('Visit')
- 
+
         try:
             cur=pd.read_csv('./processed_ramp.csv', index_col=[0,1])
             cur=cur.drop(visit, level=0)
             cur=pd.concat((cur,processed_data), sort=False)
             cur.to_csv('./processed_ramp.csv', index_label=['Obs', 'Type'])
         except IOError:
-            processed_data.to_csv('./processed_ramp.csv',index_label=['Obs', 'Type'])    
+            processed_data.to_csv('./processed_ramp.csv',index_label=['Obs', 'Type'])
         try:
             curr=pd.read_csv('./system_params.csv', index_col=0)
             curr=curr.drop(visit)
@@ -467,7 +467,7 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
     return [results, user_inputs]
 
 if __name__=='__main__':
-    
+
     if len(sys.argv) < 4:
         sys.exit('Format: preprocess_ramp.py [planet] [visit] [direction]')
     visit=sys.argv[1]+'/'+sys.argv[2]
@@ -478,7 +478,7 @@ if __name__=='__main__':
 
     best_results, inputs = preprocess_ramp(visit, direction
                                                  ,transit=transit, savedata=True)
-    
+
     print(best_results)
     print("Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
     print("Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
@@ -498,5 +498,5 @@ if __name__=='__main__':
         cur.to_csv('./preprocess_ramp_info.csv')
     except IOError:
         inp.to_csv('./preprocess_ramp_info.csv')
- 
-   
+
+

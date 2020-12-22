@@ -67,11 +67,11 @@ def get_lc_files(visit):
             stist2['Wave']=[wave]*len(model)
             stist2['phase']=modelx
             stist2['Model']=model
-         
-          
+
+
             stisd=stisd.append(stist)
             stism=stism.append(stist2)
-            
+
             #xmin=np.min(date)-0.01
             #xmax=np.max(date)+.052
             if i % 2 == 0 :

@@ -7,7 +7,7 @@ from astropy.io import fits
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import fullzap 
+import fullzap
 import wave_solution
 from bkg import get_data
 
@@ -21,11 +21,11 @@ def flatfield(visit, direction, wave=[0]):
     test=fits.open(data[3])
     sub=int(test[0].header['subtype'][2:-3])
     test.close()
-    
+
     if len(wave)==1:
         df=pd.read_csv('./wave_sol/wave_solution.csv', index_col=0)
         wave=df.loc[visit, 'Wavelength Solution [A]'].values
-    # Units of wave are angstrom 
+    # Units of wave are angstrom
     cube=fits.open('flats.fits')
     wmin=cube[0].header['WMIN']
     wmax=cube[0].header['WMAX']
@@ -38,7 +38,7 @@ def flatfield(visit, direction, wave=[0]):
 
     x1,x2,y1,y2=pd.read_csv('coords.csv'
                             , index_col=0).loc[visit,'Initial Aperture'].values
-    
+
     wave[wave < wmin]=wmin
     wave[wave > wmax]=wmax
     x=(wave-wmin)/(wmax-wmin)
@@ -53,7 +53,7 @@ def flatfield(visit, direction, wave=[0]):
         dat[:,-5:]=1.0
         # dat is now a flat for entire subarray.
         # Need to ignore pixels excluded by user-selected
-        # aperture. 
+        # aperture.
         flat=dat[x1:x2, y1:y2]
         xd,yd=flat.shape
         # this should be same dimensions as exp
@@ -93,7 +93,7 @@ def dq(visit, direction, data):
         obs.close()
         dqi=dqi[x1:x2,y1:y2]
         dq_array[i, :,:]=dqi
-   
+
     #dq_array=dq_array[:, 25:47, 42:186]
     #for j in range(dq_array.shape[1]):
     #    plt.plot(dq_array[:,j, 106], label='%d'%j, color='b')
@@ -121,7 +121,7 @@ if __name__=='__main__':
     else:
         plotting=False
         transit=False
-        
+
     wave=wave_solution.wave_solution(visit, direction, 'bkg', plotting=plotting
                                      , savename=False, transit=transit)
     print('wave done')
@@ -145,5 +145,3 @@ if __name__=='__main__':
     print('cr done')
     filename = './reduced/'+ visit + '/'+direction+'/final/'
     fullzap.bad_pixels(cr_data, headers, errors, raw, filename)
-
-

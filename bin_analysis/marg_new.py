@@ -26,15 +26,15 @@ from kapteyn import kmpfit
 
 def lightcurve(p, x, sh, HSTphase, dir_array, wlmodel, err, wlerror
                , transit=False):
-    
-    """ Function used by MPFIT to fit data to lightcurve model. 
+
+    """ Function used by MPFIT to fit data to lightcurve model.
 
     Inputs: p: input parameters that we are fitting for
     x: Date of each observation, to be converted to phase
     err: Error on flux of each time series point
     sh: Wavelength shift on the detector (for each exposure)
     HSTphase: Phase of HST for each exposure
-    wlmodel: The residuals from the whitelight fit for 
+    wlmodel: The residuals from the whitelight fit for
     the same systematic model at each exposure
     wlerror: Whitelight flux error at each exposure
     dir_array: Binary array that notes if exposure is forward or reverse scan
@@ -56,9 +56,9 @@ def lightcurve(p, x, sh, HSTphase, dir_array, wlmodel, err, wlerror
     #      fexpb, fexpc, flogb, flogc,
     #      rnorm, rlinear, rquad,
     #      rexpb, rexpc, rlogb, rlogc, wl_coeff]
-    Per = p[16]              
-    
-    phase = (x-p[1])/Per 
+    Per = p[16]
+
+    phase = (x-p[1])/Per
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
@@ -72,7 +72,7 @@ def lightcurve(p, x, sh, HSTphase, dir_array, wlmodel, err, wlerror
     return model, error
 
 def residuals(p,data):
-  
+
     x, y, err, sh, HSTphase, dir_array, wlmodel, wlerror, transit = data
     ym, error=lightcurve(p, x, sh, HSTphase, dir_array, wlmodel, err
                          , wlerror, transit=transit)
@@ -101,7 +101,7 @@ def marg(p_start
 
 
     # First = the cutoff point for the first orbit. 0 if orbit included.
-    
+
     white='../wl_preprocess/'
     # Read in residuals [nExposure x nModels]
     resids_df=pd.read_csv(white+'wlresiduals.csv', index_col=0).loc[visit].iloc[:,1:]
@@ -118,11 +118,11 @@ def marg(p_start
     # Sort columns to appropriate order
     #resids_df = resids_df.sort_index(axis=1)
     ###
-    
+
     # Now, finally get values
     WLresiduals = resids_df.values
     WLresiduals = WLresiduals[first:]
-    
+
     ### code to correctly order file:
     #cur = pd.read_csv('wlresiduals_orig.csv', index_col=[0,1])
     #cols = [int(x[6:]) for x in cur.columns]
@@ -173,7 +173,7 @@ def marg(p_start
     HSTP3 = 0.0     # HST orbital phase^3
     HSTP4 = 0.0     # HST orbital phase^4
     wl_coeff=0.0    # while light residual coefficient
-    
+
     # PLACE ALL THE PRIORS IN AN ARRAY
     #p0 = [rprs,flux0,epoch,m,HSTP1,HSTP2,HSTP3,HSTP4,HSTP5,HSTP6,xshift1
     #      ,xshift2,xshift3,xshift4,xshift5,xshift6,inclin,a_r,c1,c2
@@ -196,7 +196,7 @@ def marg(p_start
                     , 'fexpc', 'flogb', 'flogc', 'rnorm'
                     , 'rlinear', 'rquad', 'rexpb'
                     , 'rexpc', 'rlogb', 'rlogc', 'WL_coeff'])
-    
+
     # SELECT THE SYSTEMATIC GRID OF MODELS TO USE
     # Indicate which visit-long slope parameterizations to include
     linear = True
@@ -207,15 +207,15 @@ def marg(p_start
                                               transit=transit, linear=linear,
                                               quad=quad, exp=exp,
                                               log=log)
-    
+
     # Toggle ones and zeros to turn WL_resids off or on
     if include_residuals == True:
         wl_coeff_factor = np.zeros(grid.shape[0])
     else:
         wl_coeff_factor = np.ones(grid.shape[0])
-    grid=np.vstack((grid.T, wl_coeff_factor)).T 
+    grid=np.vstack((grid.T, wl_coeff_factor)).T
     nsys = len(grid[:,0])
-    
+
     #  SET UP THE ARRAYS  ;
     sys_depth = np.zeros((nsys,2))
     sys_model_x = np.zeros((nsys,500))
@@ -234,12 +234,12 @@ def marg(p_start
     sys_nfree = np.zeros((nsys))
     sys_model_full=np.zeros((nsys,nexposure))
     WLeffect=np.zeros((nsys,nexposure))
-  
+
     # Scatter of the residuals for each model
     resid_stddev = np.zeros(nsys)
     run1_AIC = np.zeros(nsys)
     run1_params = np.zeros((nsys,nParam))
-    
+
     x = img_date
     y=bin_spectra.sum(axis=1)
     #y[1::2] = np.median(y[::2])/np.median(y[1::2])*y[1::2]
@@ -268,10 +268,10 @@ def marg(p_start
     # Change back to .5. Only necessary to avoid weird behavior with first orbit for l9859c
     HSTphase[HSTphase > 0.5] = HSTphase[HSTphase > 0.5] -1.0
 
-    phase = (x-epoch)/Per 
+    phase = (x-epoch)/Per
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
-    
+
     for s, systematics in tqdm(enumerate(grid), desc='First MPFIT run'):
         # Ensure that the center of transit/eclipse time is fixed for these spectral fits.
         systematics[1]=1
@@ -323,7 +323,7 @@ def marg(p_start
     #Determine which of the systematic models initially gives the best fit
     top = np.argmin(run1_AIC)
 
-    
+
     # Scale error by resid_stddev[top]
 
     # Note: seems wrong to enhance data errors to be scale * model error, and then
@@ -349,8 +349,8 @@ def marg(p_start
     #scale = (std^2 - wl^2) / err^2
     scale = 1.0
     error = scale * err
-    
-    
+
+
     # print 'Beta: %.2f' % beta
     # print 'Scaling: %.2f' % (std/np.median(model_err))
     #print 'Beta check %.2f' % (beta)
@@ -360,7 +360,7 @@ def marg(p_start
 
     for s, systematics in tqdm(enumerate(grid), desc='Final MPFIT run'):
         # Update priors, re-read white light residuals for corresponding model
-        WL_model=WLresiduals[:,s] 
+        WL_model=WLresiduals[:,s]
         p0=run1_params[s,:]
         # Fix event time again
         systematics[1]=1
@@ -382,7 +382,7 @@ def marg(p_start
         fa=(x,y,error,sh,HSTphase,dir_array,WL_model,wlerror,transit)
         m2=kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
         m2.fit()
-        
+
         params=m2.params
         perror=m2.xerror
         nfree=m2.nfree
@@ -407,16 +407,16 @@ def marg(p_start
         #     print 'Depth = ',np.square(params[0]), ' at ', params[2]
         # else:
         #     print 'Depth = ',params[17], ' at ', params[2]
-       
+
         # EVIDENCE BASED ON AIC #
         sys_evidence[s]= -0.5*AIC
         sys_rchi2[s]= m2.rchi2_min
         sys_chi2[s]= m2.chi2_min
         sys_dof[s]= dof
         sys_nfree[s]= nfree
-      
 
-    
+
+
         #Calculate the systematic model given the fit parameters
         systematic_model = wl.get_sys_model(params, phase, HSTphase, sh, dir_array)
         lc_model=wl.get_lightcurve_model(params, x, transit=transit)
@@ -448,7 +448,7 @@ def marg(p_start
                          , ecolor='green', ls='', label='Corrected Data')
             plt.legend()
             plt.show()
-            
+
         # SAVE out the arrays for each systematic model ;
         if transit==True:
             sys_depth[s,0] = np.square(params[0])
@@ -474,13 +474,13 @@ def marg(p_start
     #
     ########
     ###################
-    aics = sys_evidence 
-    depth_array = sys_depth[:,0]         
+    aics = sys_evidence
+    depth_array = sys_depth[:,0]
     depth_err_array = sys_depth[:,1]
     limb_array=sys_params[:,12:16]
     limb_err_array=sys_params_err[:,12:16]
-    
-    a=np.argsort(aics)[::-1] 
+
+    a=np.argsort(aics)[::-1]
     best=np.argmax(aics)
     #print best
     zero = np.where(aics < -300)
@@ -494,14 +494,14 @@ def marg(p_start
         beta = np.max(aics) - 700
     else:
         beta=100.
-    
+
     w_q = (np.exp(aics-beta))/np.sum(np.exp(aics-beta))
     if np.any(~np.isfinite(w_q)):
         print("weight is infinite, check beta")
         sss
     bestfit=np.argmax(w_q)
     n01 = np.where(w_q >= 0.1)
-    stdResid = np.std(sys_residuals[bestfit,:]) 
+    stdResid = np.std(sys_residuals[bestfit,:])
     # print 'Evidences: ', aics
     # print 'Weights: ', w_q
     # print str(len(n01[0])) + ' models have a weight over 10%. Models: ', n01[0] , w_q[n01]
@@ -510,7 +510,7 @@ def marg(p_start
     depth = depth_array
     depth_err = depth_err_array
     coeffs=sys_params[:,-1]
-    
+
     ### HERE ADJUST DEPTHS
     if include_wl_adjustment == False:
         pass
@@ -532,7 +532,7 @@ def marg(p_start
         #modeldepths[:] = modeldepths[-1]
 
         # Difference between marginalized wl depth and each models' depth
-        
+
         deld = margWL-modeldepths
 
         # The below  was only necessary when combined old wl (50 models) with new bin fits (125)
@@ -541,21 +541,21 @@ def marg(p_start
         # print 'Average model bias: %.1f' % (deld.mean()*1e6)
         print('Average white light residual coeff: %.2f' %  coeffs.mean())
         print("--------------------------------------")
-        
+
         #delerr=np.sqrt(margerrWL**2+modeldeptherr**2)
         #coeffs=np.ones(50)
         #deld=-1.0*deld
         #coeffs=np.zeros(50)
         #coeffs=np.zeros(50)
         #print deld[bestfit]*1e6
-        
+
         # Adjust each model's depth due to its scaled bias
         depth = depth_array + deld*coeffs
         # Adjust each model's error due to incorporating marg
         # white light depth. (This should also account for model
         # white light depth, but then errors are massive, if I
         # remember correctly.
-        
+
         depth_err = np.sqrt(depth_err_array**2+margerrWL**2)
 
     print('----------------------------------------------------------------')
@@ -588,7 +588,7 @@ def marg(p_start
     plt.errorbar([10], [marg_unadj*1e6], [marg_unadj_err*1e6], color='brown', marker='x', label='Unadjusted Marginalized')
     plt.legend()
     plt.show()"""
-    
+
     #print limb_array
     marg_c=limb_array[0,:]
     marg_c_err=np.zeros(4)
@@ -619,13 +619,13 @@ def marg(p_start
         plt.ylabel('Normalized Flux')
         # plt.ylim([.999,1.001])
         plt.show()
-        
+
     rms=np.std(sys_residuals[bestfit,:])*1e6
     ratio=rms/phot_err
     print('RMS/theoretical error: %.2f' % ratio)
     weight=w_q
     marg_error=marg_depth_err
-    
+
     # save model number, weight, depth, and adjustment to array with bin number index
     cols = ['Model', 'Evidence', 'red_chi^2', 'dof', 'nfree', 'chi2', 'Resids sum', 'Model error', 'Weight', 'Depth']
     www = pd.DataFrame(np.vstack((np.arange(1,126), sys_evidence, sys_rchi2, sys_dof, sys_nfree, sys_chi2,
@@ -661,7 +661,7 @@ def marg(p_start
         mins[ac_resids<0] = ac_resids[ac_resids<0]
         maxs = np.zeros_like(ac_resids)
         maxs[ac_resids>0]=ac_resids[ac_resids>0]
-    
+
         plt.close()
         plt.clf()
         lags = np.arange(len(ac_resids))
@@ -674,9 +674,9 @@ def marg(p_start
         plt.title('Autocorrelation function of residuals')
         plt.legend()
         plt.show()
-        
+
     if save == True:
-        
+
         phase = sys_lightcurve_x[bestfit,:]
         model = sys_model_full[bestfit,:]
         corrected=sys_lightcurve[bestfit,:]
@@ -686,8 +686,8 @@ def marg(p_start
         phase_smooth = sys_model_x[bestfit,:]
         smooth_model = sys_model[bestfit,:]
         params = sys_params[bestfit,:]
-        stderror = sys_params_err[bestfit,:] 
-        
+        stderror = sys_params_err[bestfit,:]
+
         cols = ['Date', 'Flux', 'Flux Error', 'Norm Flux', 'Norm Flux Error', 'Model Phase'
                 , 'Model', 'Corrected Flux', 'Corrected Flux Error', 'Residuals']
 
@@ -709,7 +709,7 @@ def marg(p_start
         bin_smooth['bin']=nbin
         bin_smooth=bin_smooth.set_index(['Visit','binsize', 'bin'])
         bin_smooth['Transit']=transit
-        
+
         # Save results
         ## Kyle changes
 
@@ -723,7 +723,7 @@ def marg(p_start
                 , 'fexpc', 'flogb', 'flogc', 'rnorm'
                 , 'rlinear', 'rquad', 'rexpb'
                 , 'rexpc', 'rlogb', 'rlogc', 'WL coeff']
-       
+
         data=[marg_depth, rms, phot_err, ratio, orbit_start, orbit_end, bestfit] + params.tolist()
         errors= [marg_depth_err, 0, 0, 0, 0, 0, 0] + stderror.tolist()
         ind2=pd.MultiIndex.from_product([[visit],[binsize],[nbin],['Values', 'Errors']])
@@ -738,7 +738,7 @@ def marg(p_start
             cur.to_csv('./bin_params.csv', index_label=['Obs', 'Bin Size', 'Bin', 'Type'])
         except IOError:
             bin_params.to_csv('./bin_params.csv', index_label=['Obs', 'Bin Size', 'Bin', 'Type'])
-        
+
         try:
             curr=pd.read_csv('./bin_data.csv', index_col=[0,1,2])
             curr=curr.drop((visit,binsize, int(nbin)), errors='ignore')

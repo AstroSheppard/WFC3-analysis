@@ -24,7 +24,7 @@ def get_data(visit, x, y, get_raw=0):
 
     date=np.zeros(len(data))
     icount=np.zeros_like(date)
-    
+
     test=fits.open(data[0])
     xlen, ylen = test[0].data.shape
     test.close()
@@ -33,7 +33,7 @@ def get_data(visit, x, y, get_raw=0):
     alldata=np.ma.zeros((len(data),xlen, ylen))
     allerr=np.zeros((len(data),xlen,ylen))
     allraw=allerr.copy()
-    
+
     xmin=x
     xmax=xlen-x
     ymin=y
@@ -46,7 +46,7 @@ def get_data(visit, x, y, get_raw=0):
         mask=expfile[1].data
         errs=expfile[2].data
         raws=expfile[3].data
-        expfile.close() 
+        expfile.close()
         date[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
         icount[i]=hdr['COUNT']
         exptime=hdr['EXPTIME']
@@ -69,14 +69,14 @@ def get_data(visit, x, y, get_raw=0):
         return allraw, exptime
     else:
         return date, icount, alldata, allerr, allraw, exptime
-    
-    
-    
+
+
+
 def event_time(date, properties):
     """Program to determine the expected event time
      Inputs
      date: 1D array of the date of each exposure (MJD)
-     properties: 1D array containing the last observed eclipse 
+     properties: 1D array containing the last observed eclipse
      and the period. (MJD, days)"""
     time=properties[1]
     period=properties[4]
@@ -96,12 +96,12 @@ def get_orbits(date):
 
 def inputs(data, transit=True):
 
-    """ Function to read in priors for a system. 
+    """ Function to read in priors for a system.
     INPUTS:
     data: data table of priors for a particular planet
     OUTPUTS:
     Returns array of system properties: [rprs, central event time, inc
-    ,a/r, period, depth] 
+    ,a/r, period, depth]
     """
     inp_values=pd.read_table(data,sep=' ')
     data_arr=inp_values.iloc[:,2].values
@@ -157,31 +157,31 @@ def intrinsic(date, light, raw, pixels=0):
     else:
         raw_img=np.median(raw[begin:end,:,pixels[0]:pixels[1]])
     intrinsic=np.median(raw_img)
-   
+
     return intrinsic
 
 def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
                           , check=True, inp_file=False, savedata=False
                           , transit=False):
 
-    """ 
-    PURPOSE: Allow user to e xtract relevant orbital data from reduced time 
-    series of a visit. Also allow user to exclude any outlier data points. 
-    
+    """
+    PURPOSE: Allow user to e xtract relevant orbital data from reduced time
+    series of a visit. Also allow user to exclude any outlier data points.
+
     INPUTS
 
      x, y, allow the user to reduce aperture
      checks: set to "on" to manually reduce data
 
      If checks is set to on, "user_inputs" will return the inputs
-     that the user used: [first orbit, last orbit, sigma cut factor, 
+     that the user used: [first orbit, last orbit, sigma cut factor,
      number of passes, center eclipse time]. If checks is set to off, then
      the user_inputs array will be used as inputs (easier to automate) """
 
     date, icount, alldata, allerr, allraw, exptime=get_data(visit+'/'+ direction, x, y)
 
     nexposure=len(date)
-    
+
     props, errs=inputs('../planets/%s/inputs.dat' % visit[:-8], transit)
     a1=gl.get_limb(14000.,'a1')
     a2=gl.get_limb(14000.,'a2')
@@ -192,7 +192,7 @@ def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
     props_hold=props.copy()
     orbit = np.zeros(1)
 
-    # Classify the data by each HST orbit. Returns array (orbit) 
+    # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
     orbit=get_orbits(date)
@@ -207,7 +207,7 @@ def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
             df=pd.read_csv('./preprocess_info.csv')
             df=df[df.loc[:,'Transit']==transit]
             user_inputs=df.loc[visit+direction,'User Inputs'].values
-        else: 
+        else:
             sys.exit('Either allow checking or give csv file with pd info.')
 
         first_orbit=user_inputs[0]
@@ -244,20 +244,20 @@ def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
             allerr1=allerr[orbit[first_orbit]:orbit[last_orbit+1],:,:]
             allraw1=allraw[orbit[first_orbit]:orbit[last_orbit+1],:,:]
             # date1=date[first_orbit:last_orbit-1]
-            # allspecextract1=allspecextract[first_orbit:last_orbit-1,:,:] 
+            # allspecextract1=allspecextract[first_orbit:last_orbit-1,:,:]
             # STOP, 'change eclipse2017 back to orbit'
-        
+
             allspec=np.ma.sum(alldata1,axis=1)
             specerr=np.sqrt(np.sum(allerr1*allerr1, axis=1))
             light = np.ma.sum(allspec,axis=1)
             lighterr=np.sqrt(np.sum(specerr*specerr, axis=1))
-            
+
             if ploton==True:
                 plt.errorbar(date1, light/max(light),lighterr/max(light),fmt='o')
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
-                
+
             ans = raw_input("Is this correct? (Y/N): ")
             if ans.lower() in ['y','yes']: check2=False
             if ploton==True:  plt.close()
@@ -266,16 +266,16 @@ def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
     user_inputs[4]=props[1]
 
     count=intrinsic(date1, light.data, allraw)/exptime
-  
+
     #  We are only interested in scatter within orbits, so correct for flux
     #  between orbits by setting the median of each orbit to the median of
     #  the first orbit
-    
+
     # light_corrected=correction(props, date1, light, transit)
 
     # Do a 4-pass sigma cut. 3-5 sigma is ideal. Change n to see how data
     # is affected. A sigma of 3, 4, or 5 could be used, it depends on the
-    # data 
+    # data
     # light1=light.copy()
     # lighterr1=lighterr.copy()
     # allspec1=allspec.copy()
@@ -306,10 +306,10 @@ def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
     #         date1=date2.copy()
     #         light_corrected=light_corrected1.copy()
     #         icount=icount1.copy()
-            
+
     #         This performs the sigma cut and returns input for the fitter: a
     #         double array which contains a spectra for each data point
-            
+
     #         index = remove_bad_data(light_corrected, date1, user_inputs, check=check)
     #         light=light[index]
     #         date1=date1[index]
@@ -346,12 +346,12 @@ def preprocess_mcmc(visit, direction, x=0, y=0, ploton=True
                              , norandomt=norandomt, openinc=openinc, openar=openar
                              , fixtime=fixtime, transit=transit, fit_method=fit_method)
 
- 
+
 
     return [results, user_inputs]
 
 if __name__=='__main__':
-    
+
     if len(sys.argv) < 4:
         sys.exit('Format: preprocess_ramp.py [planet] [visit] [direction]')
     visit=sys.argv[1]+'/'+sys.argv[2]
@@ -362,14 +362,10 @@ if __name__=='__main__':
 
     best_results, inputs = preprocess_mcmc(visit, direction
                                                  ,transit=transit, savedata=True)
-    
+
     print(best_results)
     print("Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
     print("Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
     print("Inclination: %f +/- %f" % (best_results[4], best_results[5]))
     print("a/R*: %f +/- %f" % (best_results[6], best_results[7]))
     print("Limb darkening params: ", best_results[8], "+/-", best_results[9])
-
- 
- 
-   

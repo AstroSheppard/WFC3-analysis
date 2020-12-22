@@ -24,7 +24,7 @@ def event_time(date, properties):
     """Program to determine the expected event time
      Inputs
      date: 1D array of the date of each exposure (MJD)
-     properties: 1D array containing the last observed eclipse 
+     properties: 1D array containing the last observed eclipse
      and the period. (MJD, days)"""
     time=properties[1]
     period=properties[4]
@@ -44,12 +44,12 @@ def get_orbits(date):
 
 def inputs(data, transit=True):
 
-    """ Function to read in priors for a system. 
+    """ Function to read in priors for a system.
     INPUTS:
     data: data table of priors for a particular planet
     OUTPUTS:
     Returns array of system properties: [rprs, central event time, inc
-    ,a/r, period, depth] 
+    ,a/r, period, depth]
     """
     inp_values=pd.read_table(data,sep=' ', index_col=None)
     data_arr=inp_values.iloc[:,2].values
@@ -76,8 +76,8 @@ def inputs(data, transit=True):
         epoch=data_arr[6]+conversions[3]+period/2.
         depth = rprs*rprs*(data_arr[2]/data_arr[3])/3
 
-    
- 
+
+
     props=np.zeros(6)
     props[0]=rprs
     props[1]=epoch
@@ -97,7 +97,7 @@ def inputs(data, transit=True):
     return [props,errors]
 
 # def correction(inputs, date, flux, transit=False):
-    
+
 #     params=batman.TransitParams()
 #     params.w=90.
 #     params.ecc=0
@@ -124,8 +124,8 @@ def inputs(data, transit=True):
 #         params.u=[]
 #         params.limb_dark="uniform"
 #         m=batman.TransitModel(params, date, transittype="secondary")
-#         model=m.light_curve(params) 
-       
+#         model=m.light_curve(params)
+
 #     corrected=flux/model
 #     return corrected
 
@@ -133,7 +133,7 @@ def inputs(data, transit=True):
 # def remove_bad_data(light_curve, spectra, light_corrected, date1, light_err, spec_err
 #                     , user_inputs, check=False):
 #     """Procedure to remove "bad" data from light curve"""
- 
+
 #     med= np.ma.median(light_corrected)
 #     sigma = np.sqrt(np.sum((light_corrected-med)**2)/(2*len(light_corrected)))
 #     medi=np.zeros_like(date1)+med
@@ -168,7 +168,7 @@ def inputs(data, transit=True):
 #         nPasses=int(passes)
 #         user_inputs[3]=nPasses
 #         plt.close()
-  
+
 #     # Cut out the "bad" data
 
 #     for j in range(nPasses):
@@ -182,7 +182,7 @@ def inputs(data, transit=True):
 #         light_err=light_err[index]
 #         spectra=spectra[index,:]
 #         spec_err=spec_err[index,:]
-        
+
 #     return [light_curve, spectra, light_corrected, date1, light_err, spec_err]
 
 
@@ -190,30 +190,30 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
                           , check=True, inp_file=False, savedata=False
                           , transit=False):
 
-    """ 
-    PURPOSE: Allow user to e xtract relevant orbital data from reduced time 
-    series of a visit. Also allow user to exclude any outlier data points. 
-    
+    """
+    PURPOSE: Allow user to e xtract relevant orbital data from reduced time
+    series of a visit. Also allow user to exclude any outlier data points.
+
     INPUTS
 
      x, y, allow the user to reduce aperture
      checks: set to "on" to manually reduce data
 
      If checks is set to on, "user_inputs" will return the inputs
-     that the user used: [first orbit, last orbit, sigma cut factor, 
+     that the user used: [first orbit, last orbit, sigma cut factor,
      number of passes, center eclipse time]. If checks is set to off, then
      the user_inputs array will be used as inputs (easier to automate) """
 
     if direction != 'both':
-        
+
         folder = '../data_reduction/reduced/%s/%s/final/*.fits' % (visit, direction)
         data=np.sort(np.asarray(glob.glob(folder)))
         nexposure = len(data)
         print('There are %d exposures in this visit' % nexposure)
 
         alldate=np.zeros(len(data))
-        time=np.zeros_like(alldate) 
-    
+        time=np.zeros_like(alldate)
+
         test=fits.open(data[0])
         xlen, ylen = test[0].data.shape
         test.close()
@@ -221,7 +221,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         ylen-=2*y
         allspec=np.ma.zeros((len(data),xlen, ylen))
         allerr=np.zeros((len(data),xlen,ylen))
-    
+
         xmin=x
         xmax=xlen-x
         ymin=y
@@ -233,7 +233,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
             exp=expfile[0].data
             mask=expfile[1].data
             errs=expfile[2].data
-            expfile.close() 
+            expfile.close()
             alldate[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
             time[i]=hdr['EXPTIME']
             expo=exp[xmin:xmax, ymin:ymax]
@@ -257,8 +257,8 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         print('There are %d exposures in this visit' % nexposure)
 
         alldate=np.zeros(len(data))
-        time=np.zeros_like(alldate) 
-    
+        time=np.zeros_like(alldate)
+
         test=fits.open(data[0])
         xlen, ylen = test[0].data.shape
         test.close()
@@ -266,7 +266,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         ylen-=2*y
         allspec=np.ma.zeros((len(data),xlen, ylen))
         allerr=np.zeros((len(data),xlen,ylen))
-    
+
         xmin=x
         xmax=xlen-x
         ymin=y
@@ -278,7 +278,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
             exp=expfile[0].data
             mask=expfile[1].data
             errs=expfile[2].data
-            expfile.close() 
+            expfile.close()
             alldate[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
             time[i]=hdr['EXPTIME']
             expo=exp[xmin:xmax, ymin:ymax]
@@ -300,8 +300,8 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         print('There are %d exposures in this visit' % nexposure)
 
         rdate=np.zeros(len(rdata))
-        rtime=np.zeros_like(rdate) 
-    
+        rtime=np.zeros_like(rdate)
+
         rtest=fits.open(rdata[0])
         rxlen,rylen = rtest[0].data.shape
         test.close()
@@ -309,7 +309,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         ylen-=2*y
         rallspec=np.ma.zeros((len(rdata),rxlen, rylen))
         rallerr=np.zeros((len(rdata),rxlen,rylen))
-    
+
         rxmin=x
         rxmax=rxlen-x
         rymin=y
@@ -321,7 +321,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
             exp=expfile[0].data
             mask=expfile[1].data
             errs=expfile[2].data
-            expfile.close() 
+            expfile.close()
             rdate[i]=(hdr['EXPSTART']+hdr['EXPEND'])/2.
             rtime[i]=hdr['EXPTIME']
             expo=exp[rxmin:rxmax, rymin:rymax]
@@ -333,7 +333,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         rallspec1d=np.ma.sum(rallspec,axis=1)
         rallerr1d=np.sqrt(np.ma.sum(rallerr*rallerr, axis=1))
         rmedian_flux = np.median(np.ma.sum(rallspec1d, axis=1))
-    
+
         dir_factor = median_flux / rmedian_flux
         #dir_factor=1
         rallspec1d = rallspec1d * dir_factor
@@ -364,7 +364,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     #allspec1d=allspec1d[ix, :]
     #allerr1d=allerr1d[ix, :]
     #0, 19, 38, 57
-    # Classify the data by each HST orbit. Returns array (orbit) 
+    # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
     orbit=get_orbits(alldate)
 
@@ -378,8 +378,8 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     errs=np.append(errs, np.zeros(4))
     props_hold=props.copy()
     #orbit = np.zeros(1)
-    
- 
+
+
     print("Number of total orbits: %d" % (len(orbit)-1))
 
     # Choose which orbits to include in the eclipse fitting. 1-2 on either
@@ -390,12 +390,12 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
             df=pd.read_csv('./preprocess_info.csv')
             df=df[df.loc[:,'Transit']==transit]
             user_inputs=df.loc[visit+direction,'User Inputs'].values
-        else: 
+        else:
             sys.exit('Either allow checking or give csv file with pd info.')
 
         #allspec1d=np.ma.sum(allspec,axis=1).data
         #allerr1d=np.sqrt(np.ma.sum(allerr*allerr, axis=1)).data
-        
+
         first_orbit=user_inputs[0]
         last_orbit=user_inputs[1]
         first_data = orbit[first_orbit]
@@ -405,12 +405,12 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
         #allspec2d=allspec[first_data:last_data,:,:]
         #allerr2d=allerr[first_data:last_data,:,:]
         spec1d=allspec[first_data:last_data,:]
-        err1d=allerr[first_data:last_data,:] 
+        err1d=allerr[first_data:last_data,:]
         #allspec1d=np.ma.sum(allspec2d,axis=1) #spectra for each exposure: these axes may be backwards
         #allerr1d=np.sqrt(np.ma.sum(allerr2d*allerr2d, axis=1))
         light = np.ma.sum(spec1d, axis=1) # total light for each exposure
         lighterr=np.sqrt(np.ma.sum(err1d*err1d, axis=1))
-        
+
         user_inputs[5], user_inputs[6] = first_data, last_data
 
     if check == True:
@@ -436,7 +436,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
 
             #allspec1d=np.ma.sum(allspec,axis=1).data
             #allerr1d=np.sqrt(np.ma.sum(allerr*allerr, axis=1)).data
-            
+
             first_data = orbit[first_orbit]
             last_data=orbit[last_orbit+1]
             date=alldate[first_data:last_data]
@@ -450,31 +450,31 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
             light = np.ma.sum(spec1d,axis=1)
             lighterr=np.sqrt(np.ma.sum(err1d*err1d, axis=1))
             user_inputs[5], user_inputs[6] = first_data, last_data
-            
+
             if ploton==True:
                 plt.errorbar(date, light/max(light),lighterr/max(light),fmt='o')
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
-                
+
             ans = raw_input("Is this correct? (Y/N): ")
             if ans.lower() in ['y','yes']: check2=False
             if ploton==True:  plt.close()
 
-    
+
     props[1]=event_time(date, props)
     user_inputs[4]=props[1]
 
-    
+
     #  We are only interested in scatter within orbits, so correct for flux
     #  between orbits by setting the median of each orbit to the median of
     #  the first orbit
-    
+
   #  light_corrected=correction(props, date1, light, transit)
 
     # Do a 4-pass sigma cut. 3-5 sigma is ideal. Change n to see how data
     # is affected. A sigma of 3, 4, or 5 could be used, it depends on the
-    # data 
+    # data
     # light2=light.copy()
     # lighterr2=lighterr.copy()
     # allspec2=allspec1.copy()
@@ -499,10 +499,10 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     #         allerr1=allerr2.copy()
     #         date1=date2.copy()
     #         light_corrected=light_corrected2.copy()
-            
+
     #         # This performs the sigma cut and returns input for the fitter: a
     #         # double array which contains a spectra for each data point
-            
+
     #         light, allspec1, light_corrected, date1, lighterr, allerr1 = remove_bad_data(light
     #                                                                                      , allspec1
     #                                                                                      , light_corrected
@@ -539,7 +539,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     #savemc = visit
     save_model_info = False
     #save_model_info = visit
-    
+
     #visit=False
     #savedata=False
     savemc=False
@@ -575,14 +575,14 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
                                                                  , 'Errors'])
         sys_p['Visit']=visit
         sys_p=sys_p.set_index('Visit')
- 
+
         try:
             cur=pd.read_csv('./processed_data.csv', index_col=[0,1])
             cur=cur.drop(visit, level=0, errors='ignore')
             cur=pd.concat((cur,processed_data), sort=False)
             cur.to_csv('./processed_data.csv', index_label=['Obs', 'Type'])
         except IOError:
-            processed_data.to_csv('./processed_data.csv', index_label=['Obs','Type'])    
+            processed_data.to_csv('./processed_data.csv', index_label=['Obs','Type'])
         try:
             curr=pd.read_csv('./system_params.csv', index_col=0)
             curr=curr.drop(visit, errors='ignore')
@@ -594,7 +594,7 @@ def preprocess_whitelight(visit, direction, x=0, y=0, ploton=True
     return [results, user_inputs]
 
 if __name__=='__main__':
-    
+
     if len(sys.argv) < 4:
         sys.exit('Format: preprocess_whitelight.py [planet] [visit] [direction]')
     visit=sys.argv[1]+'/'+sys.argv[2]
@@ -605,7 +605,7 @@ if __name__=='__main__':
 
     best_results, inputs= preprocess_whitelight(visit, direction
                                                 ,transit=transit, savedata=False)
-    
+
     print(best_results)
     print("Marg Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
     print("Marg Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
@@ -624,4 +624,4 @@ if __name__=='__main__':
         cur.to_csv('./preprocess_info.csv')
     except IOError:
         inp.to_csv('./preprocess_info.csv')
- 
+

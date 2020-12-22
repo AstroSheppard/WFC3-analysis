@@ -38,15 +38,15 @@ def separate(planet):
     time=np.zeros(len(data)-1)
     visit=np.zeros_like(date)
     hst_period=95.47
-    
+
     for i in range(len(date)-1):
         t=np.abs(date[i+1]-date[i])*24*60
         time[i]=t
-        
-        #  If time between data points is greater than 
+
+        #  If time between data points is greater than
         #  3 HST orbits from previous exposure,
         #  then I classify it as a new observation
-        
+
         if t/hst_period > 3: visit[i]=1
 
     nObs=np.sum(visit)+1
@@ -62,7 +62,7 @@ def separate(planet):
                 os.makedirs(dir)
             else:
                 raise
-    
+
     direct=dirs[0]
     raw_d=raw_dirs[0]
     numV=0
@@ -79,7 +79,7 @@ def separate(planet):
                 raw_d=raw_dirs[numV]
             except IndexError:
                 pass
-    return 
+    return
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

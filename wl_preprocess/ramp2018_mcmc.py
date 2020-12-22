@@ -74,7 +74,7 @@ def plot_chain(chain, n, lab='param', save=False, mc_dir='.'):
 def get_sys_model(p, date, phase, exptime, orbit_start, orbit_end, lc=1.0):
     start=date-exptime/2./60/60/24
     count=(np.zeros_like(date)+p[16])*lc # replace this with transit
-    
+
     ramp=RECTE(count,start*24*3600., exptime=exptime, trap_pop_s=p[4],
                trap_pop_f=p[5], dTrap_s=p[6], dTrap_f=p[7])
     ramp=ramp/np.median(ramp[orbit_start:orbit_end])
@@ -88,7 +88,7 @@ def get_lightcurve_model(p, date, transit=True):
 
                     #p0 = [rprs,flux0,epoch,m,traps, trapf, dtraps, dtrapf
     #  ,inclin,a_r,c1,c2,c3,c4,Per,fp, intrinsic_count]
-    
+
     #  p0 = [rprs,flux0,m,traps, trapf, dtraps, dtrapf, intrinsic_count]
     params=batman.TransitParams()
     params.w=90.
@@ -116,18 +116,18 @@ def get_lightcurve_model(p, date, transit=True):
     return model
 
 def lightcurve(p, x, exptime, orbit_start, orbit_end, transit=True):
-    """ Function used by MPFIT to fit data to lightcurve model. 
+    """ Function used by MPFIT to fit data to lightcurve model.
 
     Inputs: p: input parameters that we are fitting for
     x: Date of each observation, to be converted to phase
     means: Mean pixel count rate time series
-    exptime: exposure time 
+    exptime: exposure time
     transit: True for transit, false for eclipse
 
     Output: Returns weighted deviations between model and data to be minimized
     by MPFIT. """
 
-    phase = (x-p[2])/p[14] 
+    phase = (x-p[2])/p[14]
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
@@ -189,16 +189,16 @@ def lnprob(p, x, y, yerr, p_start, p_error, syst, *args):
     return lp + lnlike(params, x, y, yerr, *args), lp
 
 def lnprior(theta, theta_initial, theta_error, syst, transit=True):
- 
+
     """ Priors on parameters. For system, try both fixing and gaussian priors.
     For depth and others, do "uninformative" uniform priors over a large enough
     range to cover likely results
 
     Right now I'm extremely conservative. Prior is any possible value for
-    open parameters (uniform), and fixed for all others. In future, I will 
+    open parameters (uniform), and fixed for all others. In future, I will
     update fixed with gaussian priors and uniform with more appropriate uninformative
     priors. """
-    
+
     # Params: rprs, flux0, m, traps, trapf, dtraps, dtrapf
     # intrinsic_count
     # uninformative: rprs, flux0, m, traps, trapf, dtraps, dtrapf, fp?, intrinsic count
@@ -239,9 +239,9 @@ def lnprior(theta, theta_initial, theta_error, syst, transit=True):
         if syst[14]==0 and not theta_initial[14] == theta[14]: return -np.inf
         if syst[15]==0 and not 0 < theta[15] < 0.2: return -np.inf
         if syst[16]==0 and not 0 < theta[16] < 10000: return -np.inf
-   
+
         test[test==0]=1e-300
-        
+
         if np.isfinite(np.sum(np.log(test))):
             return np.sum(np.log(test))
         else:
@@ -306,7 +306,7 @@ def ramp2018(p_start,
     trapf=10
     dtraps=0.0
     dtrapf=0.
-    
+
     #PLACE ALL THE PRIORS IN AN ARRAY
     p0 = [rprs,flux0,epoch,m,traps, trapf, dtraps, dtrapf
           ,inclin,a_r,c1,c2,c3,c4,Per,fp, intrinsic_count]
@@ -314,9 +314,9 @@ def ramp2018(p_start,
     lab= np.array(['Depth', 'Norm', 'Epoch', 'Slope', 'R_ts'
                    , 'R_tf', 'R_dts', 'R_dtf', 'Inc', 'ars'
                    ,'c1','c2','c3','c4','Period', 'Eclipse Depth', 'Count'])
-      
+
     nParam=len(p0)
-    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE 
+    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE
 
     #  SET UP THE ARRAYS  ;
 
@@ -326,13 +326,13 @@ def ramp2018(p_start,
     err = np.sqrt(np.sum(allerr*allerr, axis=1))
     #phot_err=1e6/np.median(np.sqrt(y))
     phot_err=1e6*np.median(err/y)
-    
+
     # Normalised Data
     # get in eclipse orbit, or first transit orbit
     ### Check if this works
     orbit_start, orbit_end=orbits('holder', x=x, y=y, transit=transit)[1]
     norm=np.median(y[orbit_start:orbit_end])
-  
+
     rawerr=err
     rawflux=y
     err = err/norm
@@ -360,12 +360,12 @@ def ramp2018(p_start,
     params = m2.params
     perror = m2.stderr
     print(m2.rchi2_min)
-    
+
     # Re-Calculate each of the arrays dependent on the output parameters
-    phase = (x-params[2])/params[14] 
+    phase = (x-params[2])/params[14]
     phase -= np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
-    
+
     # LIGHT CURVE MODEL: calculate the eclipse model for the resolution of the data points
     # this routine is from MANDEL & AGOL (2002)
 
@@ -373,7 +373,7 @@ def ramp2018(p_start,
     plt.plot(x, lc_model)
     systematic_model=get_sys_model(params, x, phase, exptime, orbit_start, orbit_end, lc=lc_model)
     lc_model=1.0
-    w_model=lc_model*systematic_model  
+    w_model=lc_model*systematic_model
     w_residuals = (y - w_model)
     std = np.std(w_residuals)
     print(std/np.median(err))
@@ -406,7 +406,7 @@ def ramp2018(p_start,
 
     scale=std/np.median(err)
     #err=err*scale
-    
+
     #######################################
     # Scale error by resid_stddev[top]
     #if np.median(err) < std:
@@ -435,7 +435,7 @@ def ramp2018(p_start,
 
     if fit_method=='mcmc':
         start_time=time.time()
-     
+
         literr = perr.copy()
         #p_max=max_like(p0, x, y, err, perr, c1, c2, c3
         #               , c4, Per, exptime, orbit_start, orbit_end)
@@ -447,13 +447,13 @@ def ramp2018(p_start,
 
         #p0=np.append(p0, 0.0)
         #perr=np.append(perr, 0.0)
-       
+
         #do stuff, have output of 50th percentile called params.
         #Have point errors called error (error/f/params[1])
- 
-        
-       
-  
+
+
+
+
         #p_max[-1]=1.0
         # phase = (x-epoch)/Per
         # phase -= np.floor(phase)
@@ -463,7 +463,7 @@ def ramp2018(p_start,
         #                               , c4, Per, transit=transit)
         # model=p_max[1]*lc_model*systematic_model
 
-        # corrected = y / (p_max[1]*systematic_model)   
+        # corrected = y / (p_max[1]*systematic_model)
         # fit_residuals = (y - model)/p_max[1]
         # fit_err = err/p_max[1]
 
@@ -500,7 +500,7 @@ def ramp2018(p_start,
         #scale=np.array([1e-3, 1e-2, 1e-4, 1e-2, .1, .1, .1, .1, .1, 1e-3, 1e-3])
 
         # when using gaussian prior, set ars prior to literature values
-      
+
         #print p0[9], perr[9]
         if np.any(perr[syst==0]==0.0):
             ix = np.where((syst==0) & (perr==0.0))[0]
@@ -509,7 +509,7 @@ def ramp2018(p_start,
                     perr[i] = np.abs(p0[i])*.05
                 else:
                     perr[i]=1.0
-       
+
         #sss
         pos=np.array([p0[syst==0] + 5*perr[syst==0]*np.random.randn(ndim) for i in range(nwalkers)])
         # hack to deal with forcing ramp params to be positive for hatp41
@@ -532,7 +532,7 @@ def ramp2018(p_start,
         #sampler.run_mcmc(pos, nsteps)
         print("Time elapsed in minutes %.2f" % ((time.time()-start_time)/60))
 
-       
+
         burn = 5000
 
         for pp in range(len(p0[syst==0])):
@@ -546,10 +546,10 @@ def ramp2018(p_start,
         plt.plot(N, N/50., 'go', label='N/50')
         plt.xlabel('Chain Length')
         plt.ylabel('Autocorrelation time estimate')
-        plt.legend(prop={'size': 6})        
+        plt.legend(prop={'size': 6})
         plt.show()
         taus = np.zeros_like(p0[syst==0])
-        for pp in range(len(p0[syst==0])): 
+        for pp in range(len(p0[syst==0])):
             print(lab[syst==0][pp])
             chain = sampler.chain[:,burn:,pp]
             taus[pp] = autocorr_new(chain)
@@ -584,7 +584,7 @@ def ramp2018(p_start,
         plt.show()
 
         samples[:,0]=samples[:,0]**2*1e6
-  
+
         save=False
         #for i in range(len(index)):
         #    if index[i] == 1:
@@ -606,17 +606,17 @@ def ramp2018(p_start,
         plt.show()
         accept=sampler.acceptance_fraction
         print('accept rate: ', accept)
-     
+
         #plt.savefig("mcmc_corner.png")
         plt.clf()
         plt.close()
-        
+
         p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                              zip(*np.percentile(samples, [16, 50, 84],
                                                 axis=0)))
         print(p_mcmc)
-     
-        
+
+
         params=np.zeros(len(p_mcmc))
         param_errs = np.zeros_like(params)
         for i, tup in enumerate(p_mcmc):
@@ -635,7 +635,7 @@ def ramp2018(p_start,
         ar_err=perror[9]
         c=p0[10:14]
         c_err=perror[10:14]
-        
+
         if transit==True:
             p0[0]=(p0[0]/1e6)**.5
         else:
@@ -649,8 +649,8 @@ def ramp2018(p_start,
                             orbit_start, orbit_end, lc=lc_model)
         systematic_model = model/lc_model
 
-    
-        corrected = y / (systematic_model)   
+
+        corrected = y / (systematic_model)
         fit_residuals = (y - model)
         fit_err = err*params[1]
         rms = np.std(fit_residuals)*1e6
@@ -693,12 +693,12 @@ def ramp2018(p_start,
         plt.hist((fit_residuals/fit_err)/np.sum(fit_residuals/fit_err), 20)
         plt.savefig('residual_hist.png')
         print time.time()-start_time"""
-   
 
-        
+
+
         if savewl:
             # Save results
-            # convert to 
+            # convert to
             cols=['Depth', 'RMS', 'Photon Error', 'Ratio', 'Norm index1', 'Norm index2', 'rprs'
                   , 'Zero-flux' , 'Event time', 'Slope', 'ramp1', 'ramp2','ramp3', 'ramp4'
                   , 'inc','ar', 'c1', 'c2', 'c3', 'c4', 'Period', 'eclipse depth', 'Intrinsic Count']
@@ -707,7 +707,7 @@ def ramp2018(p_start,
             ind2=pd.MultiIndex.from_product([[savewl],['Values', 'Errors']])
             wl_params = pd.DataFrame(np.vstack((data,errors)), columns=cols, index=ind2)
             wl_params['Transit']=transit
-    
+
             try:
                 cur=pd.read_csv('./wl_ramp_params.csv', index_col=[0,1])
                 #cur=cur.drop(savewl, level=0)

@@ -16,7 +16,7 @@ def get_limb(planet, x, limb_coeff, filt1='J', filt2='H', load=False):
         #lds=pd.read_csv('../planets/'+planet+'/claret2012.csv')
 
         lds['Filt']=lds['Band'].str.strip()
-            
+
         key=pd.read_csv('filt_waves.csv')
 
         data=lds.set_index('Filt').join(key.set_index('Filt'), how='inner')
@@ -31,21 +31,21 @@ def get_limb(planet, x, limb_coeff, filt1='J', filt2='H', load=False):
         #plt.plot(x, f(x), 'rx')
         #plt.show()
         return f(x)
-    
+
 
 def test_interp():
-    """ Tests if linear interpolation of coefficients is 
+    """ Tests if linear interpolation of coefficients is
     equivalent to linear interpolation of limb darkening curves.
 
     Since I assume the change between coeffs is slow between similar wavelengths
-    J and H - aka that it's linear - and since the curve depends linearly on 
+    J and H - aka that it's linear - and since the curve depends linearly on
     the coefficients, it is okay just to interpolate coeffs. The only other
-    assumption is that the baseline intensity is approximately the same. 
+    assumption is that the baseline intensity is approximately the same.
 
     Testing the average wavelength between J and H confirms this. Interpolating
     the curves is equivalent ro interpolating the coeffs then generating
     a curve. True means they are equivalent. """
-    
+
     lds=pd.read_table('3d.tsv')
     lds['Filt']=lds['Filt'].str.strip()
     key=pd.read_csv('filt_waves.csv')
@@ -71,7 +71,7 @@ def test_interp():
 
 def limb_curve(coeffs):
     """ Given the coefficients, generate a limb darkening curve assuming
-    I_0 = 1 """ 
+    I_0 = 1 """
     c=np.ones(5)
     d=c.copy()
     d[0]=0
@@ -82,4 +82,3 @@ def limb_curve(coeffs):
     for i, item in enumerate(x):
         intensity[i]=np.sum(c*(1-d*item**exp))
     return intensity
-    

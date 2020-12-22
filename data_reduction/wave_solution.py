@@ -11,7 +11,7 @@ import mpfit
 
 def pixel_scale(y):
     """Function (from WFC3 paper),
-    to determine max and min scale 
+    to determine max and min scale
     for given ycen"""
     min=.0028*y+44.68
     max=.0026*y+45.112
@@ -19,25 +19,25 @@ def pixel_scale(y):
     return out
 
 def solution(p, flux, error, sensitivity, star_lines, model_wave, coeffs, fjac=None):
-    """ Fitting function for mpfit, which will minimize the returned deviates. 
+    """ Fitting function for mpfit, which will minimize the returned deviates.
     This compares the model stellar spectra*sensitivity to observed spectrum
     to get wavelength of each pixel."""
-    
+
     # Convert pixels to wavelengths
 
     xref=coeffs[0]+coeffs[1]*(0-p[0])
     pixel=range(len(flux))
     x=p[1]*(pixel+p[2])+xref
-    
-    # calculate the model (sensitivity function x stellar spectra)  
+
+    # calculate the model (sensitivity function x stellar spectra)
     model=star_lines*sensitivity
     model=model/np.max(model)
- 
+
     # Interpolate model to match data wavelength
     theory=np.interp(x, model_wave, model)
     status=0
     return [status,(flux-theory)/error]
-  
+
 def orbits(data, phase_curve=False, transit=False, **kwargs):
     """Find OOE or OOT exposure to use as stellar
     spectrum. STILL NEED TO TEST"""
@@ -59,7 +59,7 @@ def orbits(data, phase_curve=False, transit=False, **kwargs):
     for i in range(len(date)-1):
         t=date[i+1]-date[i]
         if t*86400 > 1800: orbit=np.append(orbit, i+1)
-  
+
     orbit=np.append(orbit,len(date))
 
     if transit == True:
@@ -83,9 +83,9 @@ def orbits(data, phase_curve=False, transit=False, **kwargs):
     return [expo, expos]
 
 def wave_solution(visit, dire, level, plotting=False, savename=False, phase=False, transit=False):
-    """ Implements MPFIT to determine physical wavelength for each pixel 
+    """ Implements MPFIT to determine physical wavelength for each pixel
     for future spectral fitting."""
-    
+
     ### Model spectra
     # Read in model wavelength
     file='../planets/'+visit[:-8]+'/wave.dat'
@@ -98,25 +98,25 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
     file='../planets/'+visit[:-8]+'/continuum.dat'
     cont=np.genfromtxt(file, dtype=str)
     nNum=10
- 
+
     # Convert file to double array
     con=[]
     for line in cont:
         for i in range(len(line)/nNum):
             con.append(line[nNum*i:nNum*(i+1)])
-    con=np.asarray(con).astype(float)        
+    con=np.asarray(con).astype(float)
     cont=con[index]
 
     # Read in model lines
     file='../planets/'+visit[:-8]+'/kurucz.dat'
     lines=np.genfromtxt(file,dtype=str)
-  
+
     # Convert to double array
     lines_hold=[]
     for line in lines:
         for i in range(len(line)/nNum):
             lines_hold.append(line[nNum*i:nNum*(i+1)])
-    lines=np.asarray(lines_hold).astype(float)        
+    lines=np.asarray(lines_hold).astype(float)
     line=lines[index]
 
     # Final model
@@ -128,25 +128,25 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
     wssens=sens_fits[1].data.WAVELENGTH
     through=sens_fits[1].data.SENSITIVITY
     sens_fits.close()
-    
+
     # Convert model wavelength to same units (angstroms)
     wavelength=wavelength*10.
     # Interpolate (linear) sensitivity array to model wavelength grid
     result=np.interp(wavelength, wssens, through)
-    
-  
+
+
     ######## Observed Spectrum ########
 
     # Find an exposure of just the stellar spectrum (either in eclipse or
     # before ingress
-    
+
     data=np.sort(glob.glob('../data_reduction/reduced/'
                    + visit +'/'+ dire +'/'+level+'/*.fits'))
 
     exp=orbits(data, phase=phase, transit=transit)[0] # may have phase mixed up
-    
+
     # Read in data, and normaliza the spectrum
-    
+
     data=np.sort(glob.glob('../data_reduction/reduced/'+ visit
                            +'/'+ dire +'/'+level+"/%03d*"%exp))
 
@@ -180,11 +180,11 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
             break
         else:
             exp.close()
-   
+
     # Find range of pixel scales for a given center y
     limits = pixel_scale(ycen)
     scale=np.mean(limits)
-        
+
     ####### FIT MODEL TO DATA ######
 
     a=np.asarray([8.95431e3, 9.35925e-2])
@@ -216,17 +216,17 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
     covar=m.covar
     niter=m.niter
     pcerror=perror*np.sqrt(bestnorm/nfree)
-        
+
     ###### Plot results ######
     xlen=len(spec)
     data_wave=np.zeros(xlen)
-    xref=a[0]+a[1]*(0-parameters[0]) 
+    xref=a[0]+a[1]*(0-parameters[0])
     for i in range(xlen):
         data_wave[i]=(parameters[1]*(i+parameters[2]))+xref
-  
+
     model=f*result
     model=model/np.max(model)
- 
+
     if plotting == True:
         p=plt.plot(data_wave/1e4, spec, 'red')
         plt.xlabel('Wavelength [$\mu$m]')
@@ -238,11 +238,11 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
         t=plt.text(1.17,.1,'Model Spectrum',  color='blue')
         t=plt.text(1.45,.2,'Model Stellar Flux',  color='black')
         t=plt.text(1.45,.1,'G141 Sensitivity',  color='green')
-  
+
     if savename:
         names=visit.split('/')
-        plt.savefig('./wave_sol/'+names[0]+names[1][-3:]+'_wavefit.pdf')     
-        
+        plt.savefig('./wave_sol/'+names[0]+names[1][-3:]+'_wavefit.pdf')
+
         wave_solution=pd.DataFrame(data_wave, columns=['Wavelength Solution [A]'])
         wave_solution['Visit']=visit
         wave_solution['Transit']=transit
@@ -254,7 +254,7 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
             current.to_csv('./wave_sol/wave_solution.csv')
         except IOError:
             wave_solution.to_csv('./wave_sol/wave_solution.csv')
-        
+
         headers=np.asarray(['Model Wavelength [A]', 'Model Spectrum'])
         extras=pd.DataFrame(list(zip(wavelength, model)),columns=headers)
         extras['Xcen']=parameters[0]
@@ -272,7 +272,7 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
             cur.to_csv('./wave_sol/wave_solution_extras.csv')
         except IOError:
             extras.to_csv('./wave_sol/wave_solution_extras.csv')
-    
+
     if plotting==True: plt.show()
     return data_wave
 
@@ -290,6 +290,6 @@ if __name__ == '__main__':
     else:
         plotting=False
         trans=False
-    
+
     wave=wave_solution(visit, direction, 'final'
                        , plotting=plotting, savename=True, transit=trans)

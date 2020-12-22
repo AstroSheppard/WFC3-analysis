@@ -37,12 +37,12 @@ def correlated(resids, name):
         #nbins[i]=len(r)
         #rms[i]=np.std(r)
         #error[i]=rms[i]/np.sqrt(2*nbins[i])
-        
+
     #expected=rms[0]/np.sqrt(binsize)*np.sqrt(nbins/(nbins-1))
 
     rms, rmslo, rmshi, expected, binsize=mc3.rednoise.binrms(resids,n)
 
-    
+
     significant=np.where(rms/expected -1 > 2*rmslo/expected)[0]
     print(significant)
     if len(significant) == 0:
@@ -50,7 +50,7 @@ def correlated(resids, name):
     else:
         max_beta = np.max(rms[significant]/expected[significant])
         ind = np.argmax(rms[significant]/expected[significant])
-        print (rms[significant[ind]]/expected[significant[ind]]- 
+        print (rms[significant[ind]]/expected[significant[ind]]-
                rmslo[significant[ind]]/expected[significant[ind]])
 
     plt.plot(binsize, expected/rms[0],color='black', label='Expected')
@@ -120,12 +120,12 @@ def adtest(resids, photon_error):
   res=np.sort(resids)
   num=np.ones(nres)/nres
   cdf1=np.cumsum(num)
-  
+
   # Case 3: we do not know mean or sigma of distribution. Determine from residuals
   # Test if it is gaussian, just with inflated errors (aka no red noise)
   avg_3=np.mean(res)
   sig_3=np.std(res)
-    
+
   # Case 0: We "know" the distribution is photon noise gaussian centered on 0. Test for accurate noise
   avg_0=0
   sig_0=photon_error
@@ -133,7 +133,7 @@ def adtest(resids, photon_error):
   # Normalize (see wikipedia)
   data_0=(res-avg_0)/sig_0
   data_3=(res-avg_3)/sig_3
-  
+
   # Get gaussian CDFs with corresponding mean and sigma
   cdf_0=st.norm.cdf(data_0)
   cdf_3=st.norm.cdf(data_3)
@@ -144,8 +144,8 @@ def adtest(resids, photon_error):
   # Get continuous, unnormalized perfectly gaussian residuals for plotting
   gauss_resids_0 = sig_0*gauss + avg_0
   gauss_resids_3 = sig_3*gauss + avg_3
-   
-    
+
+
   # Calculate A-D number
   sum_0=0
   sum_3=0
@@ -154,7 +154,7 @@ def adtest(resids, photon_error):
     sum_0+=(2*j-1)*(np.log(cdf_0[j-1])+np.log(1.0-cdf_0[nres-j]))
     sum_3+=(2*j-1)*(np.log(cdf_3[j-1])+np.log(1.0-cdf_3[nres-j]))
     # Then comparison to any gaussian
-    
+
   ad_0=-nres-sum_0/nres
   ad_3=-nres-sum_3/nres
   ad_3*=(1+4./nres-25./nres/nres)
@@ -164,13 +164,13 @@ def adtest(resids, photon_error):
   print('Compared to Gaussian: %f' % ad_3)
   print('Shapiro p-value: %f' % shapiro[1])
   print('Pearson p-value: %f' % pearson[1])
-  
+
   return res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf
 
 
 def wlpaper(visit, method='marg'):
 
-  """ This puts all information about quality of fit for 
+  """ This puts all information about quality of fit for
   one visit into a few nice figures"""
   if method=='marg':
     modelfile='../wl_preprocess/wl_models_info.csv'
@@ -180,13 +180,13 @@ def wlpaper(visit, method='marg'):
     best= model_info.loc[:,best_model]
     resids=best.loc['Residuals'].values*1e6
     data=pd.read_csv(datafile, index_col=[0,1]).loc[visit]
-    
+
     flux=data.loc['data','Normalized Flux'].values
     error=data.loc['data','Normalized Error'].values
     nflux=data.loc['data','Flux'].values
     nerror=data.loc['data','Error'].values
     photon_error=data.loc['photon err','Values']
-    
+
     best_model=model_info.loc['Weight'].iloc[:-1].astype(float).idxmax()
     best= model_info.loc[:,best_model]
     nfree=(model_info.loc['Params Errors', best_model] != 0.0).sum()
@@ -212,18 +212,18 @@ def wlpaper(visit, method='marg'):
     wlsmooth=pd.read_csv(sfile, index_col=0)
     smooth=wlsmooth.loc[visit]
     data=pd.read_csv(dfile, index_col=0).loc[visit]
-    
-    
+
+
     flux=data['Norm Flux'].values
     error=data['Norm Flux Error'].values
     nflux=data['Flux'].values
     nerror=data['Flux Error'].values
     params=pd.read_csv(pfile, index_col=[0,1]).loc[(visit,'Values')]
-    
+
     photon_error=params['Photon Error']
     norm=params['Zero-flux']
     resids=data['Residuals'].values*1e6
-    
+
     wlphase=data['Model Phase'].values+.5
     cor=data['Corrected Flux'].values
     corerr=data['Corrected Flux Error'].values
@@ -242,7 +242,7 @@ def wlpaper(visit, method='marg'):
   plt.xlim([xmin, xmax])
   plt.ylabel('Normalized Flux')
   plt.text(-.055, 0.9975, '(a)')
-  #plt.text(.48,.999, 'Error ')  
+  #plt.text(.48,.999, 'Error ')
 
   plt.subplot(312)
   plt.errorbar(wlphase, cor, corerr, color='w', ls='', marker='o', ecolor='w'
@@ -251,9 +251,9 @@ def wlpaper(visit, method='marg'):
   plt.xlim([xmin, xmax])
   plt.ylabel('Normalized Flux')
   plt.text(-.055, .9975, '(b)')
-  #plt.text(.42,1.0, 'Error ')  
-  
-  
+  #plt.text(.42,1.0, 'Error ')
+
+
   flat=np.zeros_like(resids)
   corerr*=1e6
   plt.subplot(313)
@@ -302,7 +302,7 @@ def wlpaper(visit, method='marg'):
   #plt.savefig('cdf'+method+'.png')
 
   #correlated(resids,name=visit.replace('/','_')+'_'+method)
-  
+
 if __name__=='__main__':
   visit=sys.argv[1]+'/'+sys.argv[2]+'/'+sys.argv[3]
   #visit='no_inflation_hatp41'

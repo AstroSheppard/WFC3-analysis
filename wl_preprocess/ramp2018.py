@@ -51,21 +51,21 @@ def get_lightcurve_model(p, date, transit=False):
     return model
 
 def lightcurve(p, x, exptime, orbit_start, orbit_end, transit=False):
-    
-    """ Function used by MPFIT to fit data to lightcurve model. 
+
+    """ Function used by MPFIT to fit data to lightcurve model.
 
     Inputs: p: input parameters that we are fitting for
     x: Date of each observation, to be converted to phase
     means: Mean pixel count rate time series
-    exptime: exposure time 
+    exptime: exposure time
     transit: True for transit, false for eclipse
 
     Output: Returns weighted deviations between model and data to be minimized
     by MPFIT. """
 
-    Per = p[14]              
+    Per = p[14]
 
-    phase = (x-p[2])/Per 
+    phase = (x-p[2])/Per
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
@@ -80,7 +80,7 @@ def residuals(p,data):
     x, y, err, exptime, transit, orbit_start, orbit_end = data
     ym=lightcurve(p, x, exptime, orbit_start, orbit_end, transit=transit)
     return (y-ym)/err
-  
+
 def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plotting=False
                    , fixtime=False, norandomt=False, openinc=False, openar=False
                    , savewl=False, transit=False):
@@ -99,7 +99,7 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
     intrinsic_count: raw count of leveling off of ramp in orbit before event (per pixel per second)
     exptime = exposure time
     """
-    
+
     # TOTAL NUMBER OF EXPOSURES IN THE OBSERVATION
     nexposure = len(img_date)
 
@@ -122,14 +122,14 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
     trapf=10
     dtraps=0.0
     dtrapf=0.
-    
+
     #PLACE ALL THE PRIORS IN AN ARRAY
     p0 = [rprs,flux0,epoch,m,traps, trapf, dtraps, dtrapf
           ,inclin,a_r,c1,c2,c3,c4,Per,fp, intrinsic_count]
     system=[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0]
-    
+
     nParam=len(p0)
-    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE 
+    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE
 
     #  SET UP THE ARRAYS  ;
 
@@ -139,18 +139,18 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
     err = np.sqrt(np.sum(allerr*allerr, axis=1))
     #phot_err=1e6/np.median(np.sqrt(y))
     phot_err=1e6*np.median(err/y) #theoretical limit
-    
+
     # Normalised Data
     # get in eclipse orbit, or first transit orbit
     ### Check if this works
     orbit_start, orbit_end=orbits('holder', x=x, y=y, transit=transit)[1]
     norm=np.median(y[orbit_start:orbit_end])
-  
+
     rawerr=err
     rawflux=y
     err = err/norm
     y = y/norm
-    
+
     if fixtime==True: system[2] = 1
     if openinc==True: system[8] = 0
     if openar==True: system[9] = 0
@@ -172,16 +172,16 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
         print('Depth = ', params_w[15], ' at ', params_w[2])
 
     # Re-Calculate each of the arrays dependent on the output parameters
-    phase = (x-params_w[2])/params_w[14] 
+    phase = (x-params_w[2])/params_w[14]
     phase -= np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
-    
+
     # LIGHT CURVE MODEL: calculate the eclipse model for the resolution of the data points
     # this routine is from MANDEL & AGOL (2002)
 
     systematic_model=get_sys_model(params_w, x, phase, exptime, orbit_start, orbit_end)
     lc_model=get_lightcurve_model(params_w, x, transit=transit)
-    w_model=params_w[1]*lc_model*systematic_model  
+    w_model=params_w[1]*lc_model*systematic_model
     w_residuals = (y - w_model)/params_w[1]
     std = np.std(w_residuals)
 
@@ -209,14 +209,14 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
         print('Depth = ',params[15], ' at ', params[2])
 
     # Re-Calculate each of the arrays dependent on the output parameters
-    phase = (x-params[2])/params[14] 
+    phase = (x-params[2])/params[14]
     phase -= np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
     systematic_model=get_sys_model(params, x, phase, exptime, orbit_start, orbit_end)
     lc_model=get_lightcurve_model(params, x, transit=transit)
     model=params[1]*lc_model*systematic_model
-    corrected = y / (params[1]*systematic_model)   
+    corrected = y / (params[1]*systematic_model)
     fit_residuals = (y - model)/params[1]
     fit_err = error/params[1]
 
@@ -224,7 +224,7 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
     time_smooth = (np.arange(500)*0.002-.5)*params[14]+params[2]
     phase_smooth=np.arange(500)*.002-.5
     smooth_model=get_lightcurve_model(params, time_smooth, transit=transit)
-    
+
     # PLOTTING
     if plotting == True:
         #plt.errorbar(img_date, y, error,ecolor='red', color='red', marker='o', ls='')
@@ -241,9 +241,9 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
        # plt.errorbar(phase, fit_residuals, fit_err, marker='o', color='b', ls='',ecolor='blue')
        # plt.plot(phase, np.zeros_like(phase))
        # plt.show()
-        
+
     # SAVE out the arrays for each systematic model ;
-        
+
     if transit==True:
         depth = np.square(params[0])
         depth_err = stderror[0]*2.0*params[0]
@@ -251,7 +251,7 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
         depth = params[15]
         depth_err = stderror[15]
 
-    
+
     epoch=params[2]
     epoch_err=stderror[2]
     inc=params[8]
@@ -308,7 +308,7 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
         ind2=pd.MultiIndex.from_product([[savewl],['Values', 'Errors']])
         wl_params = pd.DataFrame(np.vstack((data,errors)), columns=cols, index=ind2)
         wl_params['Transit']=transit
-    
+
         try:
             cur=pd.read_csv('./wl_ramp_params.csv', index_col=[0,1])
             #cur=cur.drop(savewl, level=0)
@@ -317,7 +317,7 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
             cur.to_csv('./wl_ramp_params.csv', index_label=['Obs', 'Type'])
         except IOError:
             wl_params.to_csv('./wl_ramp_params.csv', index_label=['Obs', 'Type'])
-            
+
         try:
             curr=pd.read_csv('./wl_ramp_data.csv', index_col=0)
             curr=curr.drop(savewl)
@@ -333,7 +333,7 @@ def ramp2018(p_start, img_date, allspec, allerr, intrinsic_count, exptime, plott
             currr.to_csv('./wl_ramp_smooth.csv', index_label='Obs')
         except IOError:
             wl_smooth.to_csv('./wl_ramp_smooth.csv', index_label='Obs')
-            
+
 
     return [depth, depth_err, epoch
             , epoch_err, inc, inc_err
