@@ -325,13 +325,13 @@ if __name__ == '__main__':
         dire=header['POSTARG2'] + 5.0
         direction[i]=dire
         if dire > 0:
-                    n_forward+=1
+            n_forward+=1
             if n_forward == 1:
                 forward_img=exp[1].data
             exp.close()
         else:
             n_reverse+=1
-                    if n_reverse == 1:
+            if n_reverse == 1:
                 reverse_img=exp[1].data
             exp.close()
     # Center the source
