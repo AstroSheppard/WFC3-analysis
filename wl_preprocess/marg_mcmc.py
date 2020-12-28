@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import sys
 import time
 import shutil
@@ -1198,9 +1198,8 @@ INPUTS:
         #print 'acor times: ', time1
         #print 'get_autocorr_times: ', times
 
-        p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-                     zip(*np.percentile(samples, [16, 50, 84],
-                                        axis=0)))
+        p_mcmc = [(v[1], v[2]-v[1], v[1]-v[0]) for v in zip(*np.percentile(samples, [16, 50, 84],
+                                        axis=0))]
 
         mc_depth_err = (p_mcmc[0][1]+p_mcmc[0][2])/2.0
         mc_model_ratio = mc_depth_err/depth_err[best]/1e6*ratio
