@@ -3,10 +3,10 @@ import sys
 import numpy as np
 import glob
 import matplotlib.pyplot as plt
-from astropy.io import fits
 import pandas as pd
+from astropy.io import fits
 
-import mpfit
+from . import mpfit
 
 
 def pixel_scale(y):

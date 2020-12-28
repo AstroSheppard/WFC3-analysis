@@ -6,8 +6,8 @@ from astropy.io import fits
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import fullzap 
-from bkg import get_data
+import .fullzap 
+from .bkg import get_data
 
 def flatfield(visit, direction):
     """ Exps is every exposure in a visit/direction

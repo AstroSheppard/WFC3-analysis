@@ -4,7 +4,6 @@ import sys
 import numpy as np
 from astropy.io import fits
 from tqdm import tqdm
-
 from scipy.special import erfinv
 import matplotlib.pyplot as plt
 
