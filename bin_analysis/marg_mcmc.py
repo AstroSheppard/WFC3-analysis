@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import sys
 
 import pandas as pd
@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 from tqdm import trange
 from tqdm import tqdm
 
-import whitelight2018 as wl
-from wave_solution import orbits
+#import whitelight2018 as wl
+from ..wl_preprocess import marg_mcmc as wl
+from ..wave_solution import orbits
 from kapteyn import kmpfit
 import batman
 

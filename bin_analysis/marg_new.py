@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 
 import matplotlib.pyplot as plt
@@ -17,9 +16,9 @@ import pickle
 
 # Local stuff
 #import whitelight2018 as wl
-import marg_mcmc as wl
-from marg_mcmc import next_pow_two, auto_window, autocorr_func_1d, autocorr_new
-from wave_solution import orbits
+from ..wl_preprocess import marg_mcmc as wl
+from ..marg_mcmc.wl_preprocess import next_pow_two, auto_window, autocorr_func_1d, autocorr_new
+from ..wl_preprocess.wave_solution import orbits
 from kapteyn import kmpfit
 
 
