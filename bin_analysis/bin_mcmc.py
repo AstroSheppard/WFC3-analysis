@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import sys
 import time
 sys.path.insert(0, '../')
@@ -385,9 +385,8 @@ def binramp(p_start # ,perr
     plt.savefig("corner_f"+nbin+'.png')
     plt.clf()
 
-    p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-                 zip(*np.percentile(samples, [16, 50, 84],
-                                    axis=0)))
+    p_mcmc = [(v[1], v[2]-v[1], v[1]-v[0]) for v in zip(*np.percentile(samples, [16, 50, 84],
+                                    axis=0))]
     print(p_mcmc)
     params=np.zeros_like(p0)
     for i, tup in enumerate(p_mcmc):

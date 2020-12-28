@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import sys
 import time
 import time
@@ -502,9 +502,8 @@ def binramp(p_start
     print('accept rate: ', np.median(accept))
     #plt.clf()
     #plt.close()
-    p_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-                 zip(*np.percentile(samples, [16, 50, 84],
-                                    axis=0)))
+    p_mcmc = [(v[1], v[2]-v[1], v[1]-v[0]) for v in zip(*np.percentile(samples, [16, 50, 84],
+                                    axis=0))]
 
 
 
