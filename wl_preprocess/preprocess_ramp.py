@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import os
 import sys
 
@@ -313,10 +313,10 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
-            first = raw_input("Enter the first orbit to include (starting from 0): ")
+            first = input("Enter the first orbit to include (starting from 0): ")
             first_orbit=int(first)
             user_inputs[0]=first_orbit
-            last= raw_input("Enter the last orbit to include (starting form 0): ")
+            last= input("Enter the last orbit to include (starting form 0): ")
             last_orbit=int(last)
             if ploton==True: plt.close()
             user_inputs[1]=last_orbit
@@ -339,7 +339,7 @@ def preprocess_ramp(visit, direction, x=0, y=0, ploton=True
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
 
-            ans = raw_input("Is this correct? (Y/N): ")
+            ans = input("Is this correct? (Y/N): ")
             if ans.lower() in ['y','yes']: check2=False
             if ploton==True:  plt.close()
 

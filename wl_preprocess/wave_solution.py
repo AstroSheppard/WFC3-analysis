@@ -27,7 +27,7 @@ def solution(p, flux, error, sensitivity, star_lines, model_wave, coeffs, fjac=N
     # Convert pixels to wavelengths
 
     xref=coeffs[0]+coeffs[1]*(0-p[0])
-    pixel=range(len(flux))
+    pixel=list(range(len(flux)))
     x=p[1]*(pixel+p[2])+xref
 
     # calculate the model (sensitivity function x stellar spectra)
