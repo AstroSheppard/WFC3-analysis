@@ -1,4 +1,4 @@
-from __future__ import print_function
+#from __future__ import print_function
 import glob
 import sys
 
@@ -187,7 +187,7 @@ def zapped(allspec):
             #crs=np.abs(allspec-medians)/sigmas
             ###
             temp=allspec.copy()
-            x=np.asarray(range(nspec))
+            x=np.asarray(list(range(nspec)))
             for i in range(nspat):
                 y=temp[:,i,:].sum(axis=1)
                 y/=np.median(y)

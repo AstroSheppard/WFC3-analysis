@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 import sys
 import glob
 
@@ -7,8 +7,8 @@ from astropy.io import fits
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import .fullzap
-import .wave_solution
+from . import fullzap
+from . import wave_solution
 from .bkg import get_data
 
 def flatfield(visit, direction, wave=[0]):

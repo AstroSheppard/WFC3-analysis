@@ -18,7 +18,7 @@ def onclick(event):
     global ix, iy
     ix=event.xdata
     iy=event.ydata
-    print 'x = %d, y = %d' % (ix, iy)
+    print('x = %d, y = %d' % (ix, iy))
 
     global coords
     coords.append((ix, iy))
@@ -30,7 +30,7 @@ def onclick_bkg(event):
     global iix, iiy
     iix=event.xdata
     iiy=event.ydata
-    print 'x = %d, y = %d' % (iix, iiy)
+    print('x = %d, y = %d' % (iix, iiy))
 
     global bkg_coords
     bkg_coords.append((iix, iiy))
@@ -42,11 +42,11 @@ def onclick_bkg2(event):
     global iiix, iiiy
     iiix=event.xdata
     iiiy=event.ydata
-    print 'x = %d, y = %d' % (iiix, iiiy)
+    print('x = %d, y = %d' % (iiix, iiiy))
 
     global bkg_coords2
     bkg_coords2.append((iiix, iiiy))
-    print bkg_coords2
+    print(bkg_coords2)
     if len(bkg_coords2) == 2:
         fig.canvas.mpl_disconnect(cid)
 
@@ -99,7 +99,7 @@ def get_data(visit, direction=None):
         og=len(ima)
         ima=ima[index]
         raw=raw[index]
-        print len(ima), " images remain out of", og, "originals"
+        print(len(ima), " images remain out of", og, "originals")
         return [ima, raw]
 
 
@@ -131,7 +131,7 @@ def check_continuity(index):
         if index[len(index)/2] - index[i] != len(index)/2 - i:
             flag[i] = 1
     new_index = index[flag == 0]
-    print "Flags: %f" % flag.sum()
+    print("Flags: %f" % flag.sum())
 
     return new_index
     #return np.all(np.arange(len(index))+min(index) == index)
@@ -191,7 +191,7 @@ def bkg(raw, size_window, test=False, get_window=False):
                                 ax=plt.imshow(f1-f2)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
-                                print "Click the top-left then the bottom-right corners"
+                                print("Click the top-left then the bottom-right corners")
                                 plt.show()
                                 bkgc= [int(i) for item in bkg_coords for i in item]
                                 x1=bkgc[1]
@@ -203,7 +203,7 @@ def bkg(raw, size_window, test=False, get_window=False):
                                 ax=plt.imshow(f1-f2)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg2)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg2)
-                                print "Click the top-left then the bottom-right corners"
+                                print("Click the top-left then the bottom-right corners")
                                 plt.show()
                                 bkgc= [int(i) for item in bkg_coords2 for i in item]
                                 x1=bkgc[1]
@@ -260,7 +260,7 @@ def bkg(raw, size_window, test=False, get_window=False):
                             ax=plt.imshow(f1-f2)
                             cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
                             cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
-                            print "Click the top-left then the bottom-right corners"
+                            print("Click the top-left then the bottom-right corners")
                             plt.show()
                             bkgc= [int(i) for item in bkg_coords for i in item]
                             x1=bkgc[1]
@@ -343,7 +343,7 @@ if __name__ == '__main__':
     ax=plt.imshow(img)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
-    print "Click the top-left then the bottom-right corners"
+    print("Click the top-left then the bottom-right corners")
     plt.show()
     # need to make sure x and y are being extracted correctly
     coords= [int(i) for item in coords for i in item]
@@ -449,7 +449,7 @@ if __name__ == '__main__':
         obs.close()
         if direction[i] > 0:
             if f==0:
-                print " getting forward direction window"
+                print(" getting forward direction window")
                 get_window=True
                 raw_fit, err_array, fwindow=bkg(expo, fwindow, get_window=get_window)
                 #print "fwindow ", fwindow
@@ -475,7 +475,7 @@ if __name__ == '__main__':
             f+=1
         else:
             if r==0:
-                print "getting reverse window"
+                print("getting reverse window")
                 get_window=True
                 raw_fit, err_array, rwindow=bkg(expo, rwindow, get_window=get_window)
                 #print "rwindow ", rwindow
@@ -513,7 +513,7 @@ if __name__ == '__main__':
     except IOError:
         coords.to_csv('./coords.csv')
 
-    print 'Finished removing background ' + visit + ' visit'
+    print('Finished removing background ' + visit + ' visit')
 
     # Write reduced data to a directory
     # for k in range(n_forward):
