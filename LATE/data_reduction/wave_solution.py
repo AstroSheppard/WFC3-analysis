@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 import pandas as pd
 
-from . import mpfit
+import mpfit
 
 
 def pixel_scale(y):

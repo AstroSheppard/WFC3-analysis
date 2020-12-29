@@ -1,4 +1,3 @@
-
 import sys
 import glob
 
@@ -7,9 +6,10 @@ from astropy.io import fits
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from . import fullzap
-from . import wave_solution
-from .bkg import get_data
+import fullzap
+import wave_solution
+from bkg import get_data
+
 
 def flatfield(visit, direction, wave=[0]):
     """ Exps is every exposure in a visit/direction
