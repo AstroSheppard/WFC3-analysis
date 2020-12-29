@@ -1,0 +1,65 @@
+To get PyEnv for the first time:
+brew install xz
+brew install pyenv
+echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
+
+To install new version of python:
+pyenv install 3.XX
+pyenv global 3.XX
+pyenv version
+
+To start virtual environment:
+% cd to desired directory)
+virtualenv venv
+source venv/bin/activate
+% deactivate to leave venv
+
+To Set up Virtual Environment (only first time):
+source venv/bin/activate
+pip install -r pre_requirements.txt
+pip install -r requirements.txt
+
+How to Clone GitHub repository:
+create special directory
+Go to GitHub repository, click green “Code” button, copy HTTPS link
+Type “git clone XX”, where XX is the link
+Put in GitHub username/pw if necessary
+
+How to Merge to Github:
+git pull:  pulls down current version from git - DO THIS FIRST
+git add/rm filename:  add/remove files on git
+git add -A: stages all changes
+git add . : stages new files and modifications, without deletions
+git add -u : stages modifications and deletions, without new files
+git commit -m YY, where YY is the note about what changed: This tells local git that you’ve made changes
+git push:  pushes your version to repository
+
+To Download Data:
+cd to “planets” directory
+Go to MAST, Click “HST Search” on the top right
+Put in target or proposal ID, change # of records to max numbers
+Mark all data that you want
+Visits can be identified by the digits after “IE” in the file name
+Click “Submit for retrieval from STDADS” at the bottom
+Put in your STSCI info on the top right
+Choose “ima” files on the bottom right
+When the data is staged (email received), type “ftp -ip archive.stsci.edu”
+Use STSCI info to log in
+CD to the correct directory (see email)
+binary cr
+mget *.fits
+Copy files from proper directory in “Data” Directory (star & planet specific)
+
+*Procedure for data analysis is in README.md in data_reduction
+
+Tips:
+- %debug: puts you in debut mode, where you can print out variables by typing their names.  Type “q” to exit.
+
+from astropy.io import fits
+import matplotlib.pyplot as plt
+with fits.open('000.fits') as exp:
+test = exp[0].data
+plt.imshow(test)
+plt.show()
+
+
