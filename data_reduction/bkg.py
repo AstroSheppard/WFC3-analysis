@@ -121,14 +121,14 @@ def maxrow(frame):
 
         low = np.min(index)
         high = np.max(index)
-        mid = (low+high)/2
+        mid = (low + high) // 2
 
         return low, mid, high
 
 def check_continuity(index):
     flag = np.zeros_like(index)
     for i in range(len(index)):
-        if index[len(index)/2] - index[i] != len(index)/2 - i:
+        if index[len(index)//2] - index[i] != len(index)//2 - i:
             flag[i] = 1
     new_index = index[flag == 0]
     print("Flags: %f" % flag.sum())
