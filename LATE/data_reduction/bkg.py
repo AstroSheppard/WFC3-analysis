@@ -191,7 +191,7 @@ def bkg(raw, size_window, test=False, get_window=False):
                                 ax=plt.imshow(f1-f2)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
-                                print("Click the top-left then the bottom-right corners")
+                                print("Click the top-left then the bottom-right corners, then close window")
                                 plt.show()
                                 bkgc= [int(i) for item in bkg_coords for i in item]
                                 x1=bkgc[1]
@@ -203,7 +203,7 @@ def bkg(raw, size_window, test=False, get_window=False):
                                 ax=plt.imshow(f1-f2)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg2)
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg2)
-                                print("Click the top-left then the bottom-right corners")
+                                print("Click the top-left then the bottom-right corners, then close window")
                                 plt.show()
                                 bkgc= [int(i) for item in bkg_coords2 for i in item]
                                 x1=bkgc[1]
