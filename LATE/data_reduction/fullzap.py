@@ -27,6 +27,7 @@ def bad_pixels(data, headers, errors, raws, savefile):
         update=np.asarray([1,-1,1])
         xl=x+0*update
         yl=y+0*update
+        sss
         for i,img in enumerate(data):
             expo=img[xl[1]:xl[2], yl[1]:yl[2]]
             error=errors[i,xl[1]:xl[2], yl[1]:yl[2]]
@@ -63,7 +64,7 @@ def ap(frame):
 
     xmin = np.min(index)
     xmax = np.max(index)
-    xapt = (xmax - xmin) / 2
+    xapt = (xmax - xmin) // 2
 
     f=np.mean(frame,axis=0)
     #f1=np.argmax(f)
@@ -81,13 +82,13 @@ def ap(frame):
 
     ymin = np.min(index)
     ymax = np.max(index)
-    yapt = (ymax - ymin) / 2
+    yapt = (ymax - ymin) // 2
 
     x=np.asarray([xapt,xmin,xmax])
     y=np.asarray([yapt,ymin,ymax])
     return (np.vstack((x,y)))
 
-    return low, high
+    #return low, high
 def aperture(exposure):
     """Given a sample exposure data, return the basic aperture."""
 

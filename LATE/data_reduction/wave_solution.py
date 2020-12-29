@@ -102,7 +102,7 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
     # Convert file to double array
     con=[]
     for line in cont:
-        for i in range(len(line)/nNum):
+        for i in range(len(line) // nNum):
             con.append(line[nNum*i:nNum*(i+1)])
     con=np.asarray(con).astype(float)
     cont=con[index]
@@ -114,7 +114,7 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
     # Convert to double array
     lines_hold=[]
     for line in lines:
-        for i in range(len(line)/nNum):
+        for i in range(len(line) // nNum):
             lines_hold.append(line[nNum*i:nNum*(i+1)])
     lines=np.asarray(lines_hold).astype(float)
     line=lines[index]
