@@ -27,7 +27,7 @@ def bad_pixels(data, headers, errors, raws, savefile):
         update=np.asarray([1,-1,1])
         xl=x+0*update
         yl=y+0*update
-        sss
+        #sss
         for i,img in enumerate(data):
             expo=img[xl[1]:xl[2], yl[1]:yl[2]]
             error=errors[i,xl[1]:xl[2], yl[1]:yl[2]]
