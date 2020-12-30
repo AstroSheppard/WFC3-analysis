@@ -80,7 +80,7 @@ def plot_time_series(visit
     alldate=alldate[date_order]
     allspec=allspec[date_order,:,:]
     allerr=allerr[date_order,:,:]
-
+    exp_numbers = np.arange(len(alldate))
     # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
@@ -93,9 +93,11 @@ def plot_time_series(visit
 
     check2=check
 
+  
     if check == True:
         user_inputs=np.zeros(7)
         while check2==True:
+            plt.close()
             if ploton==True:
                 err=np.sqrt(np.sum(np.sum(allerr[:,:,:]*allerr[:,:,:], axis=1), axis=1))
                 fl= np.sum(allspec[:,:,:], (1,2))
@@ -110,13 +112,15 @@ def plot_time_series(visit
             last_orbit=int(last)
             if ploton==True: plt.close()
             user_inputs[1]=last_orbit
-
+            check_number = input("List exposure number? (y/n) ")
+            
             allspec1d=np.ma.sum(allspec,axis=1).data
             allerr1d=np.sqrt(np.ma.sum(allerr*allerr, axis=1)).data
 
             first_data = orbit[first_orbit]
             last_data=orbit[last_orbit+1]
             date=alldate[first_data:last_data]
+            exp_nums = exp_numbers[first_data:last_data]
             spec2d=allspec[first_data:last_data,:,:]
             err2d=allerr[first_data:last_data,:,:]
             spec1d=np.ma.sum(spec2d,axis=1)
@@ -129,6 +133,9 @@ def plot_time_series(visit
                 plt.errorbar(date, light/max(light),lighterr/max(light),fmt='o')
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
+                if check_number == 'y':
+                    for  x, y, i in zip(date, light/max(light), exp_nums):
+                        plt.text(x, y, str(i), color='r', fontsize=12)
                 plt.show(block=False)
 
             ans = input("Is this correct? (Y/N): ")
