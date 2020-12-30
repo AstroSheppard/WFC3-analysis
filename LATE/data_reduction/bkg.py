@@ -507,7 +507,7 @@ if __name__ == '__main__':
 
     try:
         cur=pd.read_csv('./coords.csv', index_col=0)
-        cur=cur.drop(visit)
+        cur=cur.drop(visit, errors='ignore')
         cur=pd.concat((cur,coords))
         cur.to_csv('./coords.csv')
     except IOError:

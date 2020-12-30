@@ -36,7 +36,7 @@ def flatfield(visit, direction, wave=[0]):
     st = center-sub // 2-5
     end = center+sub // 2+5
 
-    x1,x2,y1,y2=pd.read_csv('coords.csv'
+    x1,x2,y1,y2=pd.read_csv('coords.csv')
                             , index_col=0).loc[visit,'Initial Aperture'].values
 
     wave[wave < wmin]=wmin

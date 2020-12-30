@@ -249,7 +249,7 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
         wave_solution=wave_solution.set_index('Visit')
         try:
             current=pd.read_csv('./wave_sol/wave_solution.csv', index_col=0)
-            current=current.drop(visit)
+            current=current.drop(visit, errors='ignore')
             current=pd.concat((current, wave_solution))
             current.to_csv('./wave_sol/wave_solution.csv')
         except IOError:
@@ -267,7 +267,7 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
         extras=extras.set_index('Visit')
         try:
             cur=pd.read_csv('./wave_sol/wave_solution_extras.csv', index_col=0)
-            cur=cur.drop(visit)
+            cur=cur.drop(visit, errors='ignore')
             cur=pd.concat((cur,extras))
             cur.to_csv('./wave_sol/wave_solution_extras.csv')
         except IOError:
