@@ -11,7 +11,7 @@ This organizes the data by scan direction, zooms in on the 2D spectrum, and remo
 
 reduction.py: %run reduction.py [planet] [visit##] [direction] [transit] [plotting]
 
-direction = forward, reverse, or both
+direction = forward or reverse
 transit = 0 for eclipse, 1 for transit
 plotting = 1 to show plots
 
@@ -23,4 +23,4 @@ fullzap.py: Cosmic ray correction module, imported by reduction.py
 
 mpfit.py: Fitter used for wavelength solution
 
-plot_times_series and pat_reduction.py: simplified versions used for a quick gauge on non-detrended (trended?) light curve.
+plot_time_series and pat_reduction.py: simplified versions used for a quick gauge on non-detrended (trended?) light curve.
