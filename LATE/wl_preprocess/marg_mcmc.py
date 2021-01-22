@@ -5,6 +5,8 @@ import shutil
 import os
 
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from tqdm import trange
 from tqdm import tqdm
@@ -78,13 +80,17 @@ def get_sys_model(p, phase, HSTphase, sh, dir_array):
     # scans.
     fslope = phase*p[19] + phase*phase*p[20] - p[21]*np.exp(-1.0*phase/p[22]) - p[23]*np.log(phase+p[24])
     rslope = phase*p[26] + phase*phase*p[27] - p[28]*np.exp(-1.0*phase/p[29]) - p[30]*np.log(phase+p[31])
-    # Hack to fit for one slope for bidrectional scan
-    temp = np.zeros_like(dir_array)
-    # replace temp with dir_array to go back to separate f/r slopes
-    #temp = dir_array
 
+    # This is a global variable defined in whitelight2020. It is equal to
+    # one_slope, and if true forces reverse and forward scan exposures to
+    # be fit with a single slope. This should always be true for non-linear
+    # slopes.
+    if single_slope == True:
+        slope_directions = np.zeros_like(dir_array)
+    else:
+        slope_directions = dir_array
 
-    systematic_model = ((fslope*(1-temp)+rslope*temp + 1.0)
+    systematic_model = ((fslope*(1-slope_directions)+rslope*slope_directions + 1.0)
                         * (HSTphase*p[2] + HSTphase**2.*p[3] + HSTphase**3.*p[4]
                            + HSTphase**4.*p[5] + 1.0)
                         * (sh*p[6] + sh**2.*p[7] + sh**3.*p[8] + sh**4.*p[9]
@@ -283,7 +289,7 @@ def get_shift(allspec):
 
     for i in trange(nexposure, desc='Performing cross correlation'):
         # Subtract mean to mimic
-        inp2=allspec[i,:]-allspec[i,:].mean()
+        inp2=allspec[i,:]-np.ma.mean(allspec[i,:])
         corr_tuple = plt.xcorr(inp1, inp2,  maxlags=nLag)
         lag,corr=corr_tuple[0],corr_tuple[1]
         mx=np.argmax(corr)
@@ -292,15 +298,18 @@ def get_shift(allspec):
         subcorr=corr[max(mx-srad,0):max(mx+srad,2*nLag+1)]
         p=np.polyfit(sublag, subcorr, 2)
         sh[i]=p[1]/2./p[0]
+    plt.clf()
+    plt.close('all')
     return sh
 
-def systematic_model_grid_selection(size=4,
-                                    dir_array=np.ones(1),
-                                    transit=False,
-                                    linear=True,
-                                    quad = False,
-                                    exp = False,
-                                    log = False):
+def systematic_model_grid_selection(size=4
+                                    , dir_array=np.ones(1)
+                                    , transit=False
+                                    , linear_slope=True
+                                    , quad_slope=False
+                                    , exp_slope=False
+                                    , log_slope=False
+                                    , one_slope=True):
     """ Returns model grid that indicates which parameters
     will be openly fit for and which will be fixed. Larger
     size will test higher powers. """
@@ -405,39 +414,41 @@ def systematic_model_grid_selection(size=4,
     #      rnorm, rlinear, rquad,
     #      rexpb, rexpc, rlogb, rlogc]
     grid[:25, 19] = 1
-    grid[25:, 19] = int(not linear)
+    grid[25:, 19] = int(not linear_slope)
     # Add another 25 models for quad slope
     # Set values to 1 to fix (and ignore this slope in fits), or to zero to
     # leave open.
     quad_grid = grid[:25,:].copy()
-    quad_grid[:, 19] = int(not quad)
-    quad_grid[:, 20] = int(not quad)
+    quad_grid[:, 19] = int(not quad_slope)
+    quad_grid[:, 20] = int(not quad_slope)
     grid = np.hstack((grid.T, quad_grid.T)).T
 
     # Add another 25 models for exp slope
     exp_grid = grid[:25,:].copy()
-    exp_grid[:, 21] = int(not exp)
-    exp_grid[:, 22] = int(not exp)
+    exp_grid[:, 21] = int(not exp_slope)
+    exp_grid[:, 22] = int(not exp_slope)
     grid = np.hstack((grid.T, exp_grid.T)).T
     # Add another 25 models for log slope
     log_grid = grid[:25,:].copy()
-    log_grid[:, 23] = int(not log)
-    log_grid[:, 24] = int(not log)
+    log_grid[:, 23] = int(not log_slope)
+    log_grid[:, 24] = int(not log_slope)
     grid = np.hstack((grid.T, log_grid.T)).T
-
     # If dir_array isn't all ones or all zeros, then turn on reverse slope
     # and normalization whenever forward slope/norm is on
     if 0 < np.sum(dir_array) < len(dir_array):
         grid[:, 25:] = grid[:, 18:25]
         # Hack to fit for only 1 directional slope even with forward/reverse array
-        grid[:, 26:] = 1.0
+        if one_slope == True:
+            grid[:, 26:] = 1.0
 
     return grid
 
 
 def whitelight2020(p_start, img_date, allspec, allerr, dir_array, plotting=False
                    , mcmc = False, fixtime=False, norandomt=False, openinc=False
-                   , openar=False, save_mcmc=False, save_model_info=False, transit=False
+                   , openar=False, linear_slope=True, quad_slope=False, exp_slope=False
+                   , log_slope=False, one_slope=True
+                   , save_mcmc=False, save_model_info=False, transit=False
                    , save_name=None):
     """
   NAME:
@@ -500,8 +511,10 @@ INPUTS:
 
     """
 
-
-    start_time = time.time()
+    # Apply one_slope value to get_sys_model function for quick testing
+    # without needing to make it input into many intermediate functions
+    global single_slope
+    single_slope = one_slope
     # TOTAL NUMBER OF EXPOSURES IN THE OBSERVATION
     nexposure = len(img_date)
 
@@ -527,6 +540,7 @@ INPUTS:
     HSTphase = (img_date-img_date[0])/HSTper
     HSTphase = HSTphase - np.floor(HSTphase)
     HSTphase[HSTphase > 0.5] = HSTphase[HSTphase > 0.5] -1.0
+
 
     # SET THE CONSTANTS USING THE PRIORS
     rprs = p_start[0]
@@ -564,14 +578,14 @@ INPUTS:
     HSTP4 = 0.0     # HST orbital phase^4
 
     #PLACE ALL THE PRIORS IN AN ARRAY
-    p0 = [rprs,epoch,
-          HSTP1,HSTP2,HSTP3,HSTP4,
-          xshift1 ,xshift2 ,xshift3,xshift4,
-          inclin,a_r,c1,c2,c3,c4,
-          Per,fp,fnorm, flinear, fquad,
-          fexpb, fexpc, flogb, flogc,
-          rnorm, rlinear, rquad,
-          rexpb, rexpc, rlogb, rlogc]
+    p0 = [rprs, epoch
+          , HSTP1, HSTP2, HSTP3, HSTP4
+          , xshift1, xshift2, xshift3, xshift4
+          , inclin, a_r, c1, c2, c3, c4
+          , Per, fp, fnorm, flinear, fquad
+          , fexpb, fexpc, flogb, flogc
+          , rnorm, rlinear, rquad
+          , rexpb, rexpc, rlogb, rlogc]
 
     lab = np.array(['Depth', 'Epoch', 'HST1', 'HST2'
                     , 'HST3', 'HST4', 'sh1','sh2'
@@ -584,14 +598,14 @@ INPUTS:
 
     nParam=len(p0)
     # SELECT THE SYSTEMATIC GRID OF MODELS TO USE
-
-    linear = True
-    quad = False
-    exp = False
-    log = False
-    grid = systematic_model_grid_selection(size=4, dir_array=dir_array,
-                                           transit=transit, linear = linear,
-                                           quad = quad, exp = exp, log = log)
+    grid = systematic_model_grid_selection(size=4
+                                           , dir_array=dir_array
+                                           , transit=transit
+                                           , linear_slope=linear_slope
+                                           , quad_slope=quad_slope
+                                           , exp_slope=exp_slope
+                                           , log_slope=log_slope
+                                           , one_slope=one_slope)
 
 
     nsys = len(grid[:,0])
@@ -634,17 +648,15 @@ INPUTS:
     AIC_test = np.zeros(ntrials+1)
     depth_test = np.zeros(ntrials+1)
 
-
-
-
     x = img_date
     y=allspec.sum(axis=1)
-    err = np.sqrt(np.ma.sum(allerr*allerr, axis=1))
+    err = np.sqrt(np.sum(allerr*allerr, axis=1))
     #phot_err=1e6/np.median(np.sqrt(y))
     phot_err=1e6*np.median(err/y)
 
-    # Normalised Data
 
+    # Normalised Data
+    
     orbit_start, orbit_end=orbits('holder', x=x, y=y, transit=transit)[1]
     norm=np.median(y[orbit_start:orbit_end])
 
@@ -658,6 +670,16 @@ INPUTS:
     print('----------      ------------     ------------')
 
     for s, systematics in tqdm(enumerate(grid), desc='First MPFIT run'):
+        # Skip models with slopes that aren't being tested.
+        if linear_slope==False and 24<s<50:
+            continue
+        if quad_slope==False and 49<s<75:
+            continue
+        if log_slope==False and 74<s<100:
+            continue
+        if exp_slope==False and s>99:
+            continue
+            
         system=systematics
         if fixtime==False and norandomt==False:
             for n in range(ntrials+1):
@@ -696,7 +718,7 @@ INPUTS:
 
                 # For each tested epoch time, get the depth and the AIC
                 # Make sure this is all computed correctly
-                AIC_test[n]=(2*len(x)*np.log(np.median(err))+len(x)*np.log(2*np.pi)
+                AIC_test[n]=(2*len(x)*np.log(np.ma.median(err))+len(x)*np.log(2*np.pi)
                              + m1.chi2_min + 2*m1.nfree)
                 if transit==True:
                     depth_test[n] = params_test[0]*params_test[0]
@@ -712,13 +734,14 @@ INPUTS:
             print('Best center of eclipse prior =', tcenter[best])
             depth = np.mean(depth_test[best])
             epoch = np.median(tcenter[best])
-
+            
             if transit==True:
                 rprs=np.sqrt(depth)
             else:
                 fp=depth
 
 
+        
         #Re-run the fitting process with the best prior as defined by the iterative fit
         p0 = [rprs,epoch,
               HSTP1,HSTP2,HSTP3,HSTP4,
@@ -754,7 +777,7 @@ INPUTS:
         m2.fit()
         #m = mpfit.mpfit(lightcurve,functkw=fa,parinfo=parinfo, fastnorm=True)
         params_w=m2.params
-
+        
         AIC=(2*len(x)*np.log(np.median(err))+len(x)*np.log(2*np.pi)
              + m2.chi2_min + 2*m2.nfree)
         if transit==True:
@@ -767,6 +790,7 @@ INPUTS:
         phase -= np.floor(phase)
         phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
+        
         # LIGHT CURVE MODEL: calculate the eclipse model for the resolution of the data points
         # this routine is from MANDEL & AGOL (2002)
 
@@ -779,7 +803,7 @@ INPUTS:
         run1_AIC[s] = AIC
         run1_params[s,:] = params_w
 
-
+        
     #######################################
 
     #Determine which of the systematic models initially gives the best fit
@@ -797,11 +821,19 @@ INPUTS:
     error=err*scale
 
 
+    
     print('----------      ------------     ------------')
     print('         FINAL FIT        ')
     print('----------      ------------     ------------')
     for s, systematics in tqdm(enumerate(grid), desc='Final MPFIT run'):
-
+        if linear_slope==False and 24<s<50:
+            continue
+        if quad_slope==False and 49<s<75:
+            continue
+        if log_slope==False and 74<s<100:
+            continue
+        if exp_slope==False and s>99:
+            continue
         # Define the new priors as the parameters from the best fitting
         # systematic model
         p0=run1_params[s,:]
@@ -825,11 +857,12 @@ INPUTS:
         m2=kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
         m2.fit()
         params=m2.params
-        perror=m2.xerror
+        xerror=m2.xerror
         nfree=m2.nfree
         #AIC=m2.rchi2_min + nfree
-        AIC=(2*len(x)*np.log(np.median(error))+len(x)*np.log(2*np.pi)
+        AIC=(2*len(x)*np.log(np.ma.median(error))+len(x)*np.log(2*np.pi)
              + m2.chi2_min + 2*nfree)
+
         stderror=m2.stderr
         print()
         print('Model ', s)
@@ -865,24 +898,47 @@ INPUTS:
         fit_err = error*(1-dir_array)*params[18] + error*dir_array*params[25]
         #######
 
-
-
         # Smooth Transit Model: change this from phase to time
         time_smooth = (np.arange(500)*0.002-.5)*params[16]+params[1]
         phase_smooth=np.arange(500)*.002-.5
         smooth_model=get_lightcurve_model(params, time_smooth, transit=transit)
-
+        
         # PLOTTING
-        if plotting == True:
-            if s > 0: plt.close()
-            plt.errorbar(img_date, y, error,ecolor='red', color='red', marker='o', ls='')
-            #plt.ylim([0.982, 1.005])
-            plt.plot(img_date, systematic_model, color='blue', marker='o', ls='')
-            plt.errorbar(img_date, corrected, fit_err, marker='x', color='green', ecolor='green', ls='')
-            plt.show(block=False)
 
+        if plotting == True:
+            if s==0:
+                fig, ax = plt.subplots()
+                plt.show(block=False)
+            plt.clf()
+            #if s > 0: plt.close()
+            plt.errorbar(img_date, y, error,ecolor='red', color='red'
+                         , marker='o', ls='', label='Data')
+            #plt.ylim([0.982, 1.005])
+            plt.plot(img_date, systematic_model, color='blue', marker='o'
+                     , ls='', label='Systematic Model')
+            plt.errorbar(img_date, corrected, fit_err, marker='x', color='green'
+                         , ecolor='green', ls='', label='De-trended Data')
+            plt.legend(numpoints=1)
+            hst_power = 4 - np.sum(systematics[2:6])
+            slope_power = 2 - np.sum(systematics[19:21])
+            xshift_power = 4 - np.sum(systematics[6:10])
+            power_label = r'$\phi^%d$ + HST$^%d$ + $\delta^%d$' % (slope_power, hst_power, xshift_power)
+            plt.text(0.3,0.9, power_label, transform=ax.transAxes)
+                #p0 = [rprs,epoch,
+    #      HSTP1,HSTP2,HSTP3,HSTP4,
+    #      xshift1 ,xshift2 ,xshift3,xshift4,
+    #      inclin,a_r,c1,c2,c3,c4,
+    #      Per,fp,fnorm, flinear, fquad,
+    #      fexpb, fexpc, flogb, flogc,
+    #      rnorm, rlinear, rquad,
+    #      rexpb, rexpc, rlogb, rlogc]
+            plt.draw()
+            plt.pause(0.1)
+            #breakpoint()
 
         # SAVE out the arrays for each systematic model ;
+
+        # replace stderror with xerror (asymptotic error)
         if transit==True:
             sys_depth[s,0] = np.square(params[0])
             sys_depth[s,1] = stderror[0]*2.0*params[0]
@@ -928,9 +984,6 @@ INPUTS:
     best=np.argmax(aics)
     print(best)
     # print aics
-
-
-
 
     zero = np.where(aics < -300)
     if (len(zero) > 1): print('Some bad fits - evidence becomes negative')
@@ -1024,9 +1077,9 @@ INPUTS:
     #         marg_c[i]=mean_c
     #         marg_c_err[i]=error_c
 
+    
     if plotting == True:
         plt.close()
-        plt.clf()
         plt.errorbar(sys_lightcurve_x[bestfit,:], sys_lightcurve[bestfit,:], sys_lightcurve_err[bestfit,:]
                      ,marker='o', color='b', ecolor='b', ls='')
         plt.plot(sys_model_x[bestfit,:], sys_model[bestfit,:], ls='-')
@@ -1036,6 +1089,11 @@ INPUTS:
         plt.xlabel('Phase')
         plt.ylabel('Normalized Flux')
         # plt.ylim([.999,1.001])
+        hst_power = 4 - np.sum(grid[bestfit, 2:6])
+        slope_power = 2 - np.sum(grid[bestfit, 19:21])
+        xshift_power = 4 - np.sum(grid[bestfit, 6:10])
+        power_label = r'$\phi^%d$ + HST$^%d$ + $\delta^%d$' % (slope_power, hst_power, xshift_power)
+        plt.text(0.3,0.9, power_label, transform=ax.transAxes)
         plt.show()
         #  plt.errorbar(sys_lightcurve_x[bestfit,:], sys_residuals[bestfit,:], sys_lightcurve_err[bestfit,:]
         #, marker='o', color='b', ls='',ecolor='blue')
@@ -1064,8 +1122,8 @@ INPUTS:
     maxs = np.zeros_like(ac_resids)
     maxs[ac_resids>0]=ac_resids[ac_resids>0]
 
-    plt.close()
     plt.clf()
+    plt.close()
     lags = np.arange(len(ac_resids))
     plt.plot(ac_resids, 'bo')
     plt.vlines(lags, mins, maxs, 'b')
@@ -1076,7 +1134,8 @@ INPUTS:
     plt.title('Autocorrelation function of residuals')
     plt.legend()
     plt.show()
-
+    plt.clf()
+    plt.close()
 
     ####### EMCEE ###########
     if mcmc == True:

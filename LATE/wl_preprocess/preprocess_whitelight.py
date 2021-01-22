@@ -189,6 +189,7 @@ def preprocess_whitelight(visit
                           , direction
                           , x=0, y=0
                           , check=True
+                          , ignore_first_exposures=False
                           , inp_file=False
                           , save_processed_data=False
                           , transit=False
@@ -197,6 +198,11 @@ def preprocess_whitelight(visit
                           , openinc=False
                           , openar=True
                           , fixtime=False
+                          , linear_slope=True
+                          , quad_slope=False
+                          , exp_slope=False
+                          , log_slope=False
+                          , one_slope=True
                           , norandomt=True
                           , fit_plots=True
                           , save_mcmc=False
@@ -279,7 +285,7 @@ def preprocess_whitelight(visit
 
         allspec1d=np.ma.sum(allspec,axis=1)
         allerr1d=np.sqrt(np.ma.sum(allerr*allerr, axis=1))
-        median_flux = np.median(np.ma.sum(allspec1d, axis=1))
+        median_flux = np.ma.median(np.ma.sum(allspec1d, axis=1))
         # Regardless of direction, if all exposures share the same one we make
         # dir_array all zeros for easy parameter use in model fitting.
         dir_array = np.zeros_like(alldate)
@@ -293,7 +299,6 @@ def preprocess_whitelight(visit
 
         alldate=np.zeros(len(data))
         time=np.zeros_like(alldate)
-
         test=fits.open(data[0])
         xlen, ylen = test[0].data.shape
         test.close()
@@ -306,7 +311,7 @@ def preprocess_whitelight(visit
         xmax=xlen-x
         ymin=y
         ymax=ylen-y
-
+    
         for i, img in enumerate(data):
             expfile=fits.open(img)
             hdr=expfile[0].header
@@ -324,8 +329,7 @@ def preprocess_whitelight(visit
 
         allspec1d=np.ma.sum(allspec,axis=1)
         allerr1d=np.sqrt(np.ma.sum(allerr*allerr, axis=1))
-        median_flux = np.median(np.ma.sum(allspec1d, axis=1))
-
+        median_flux = np.ma.median(np.ma.sum(allspec1d, axis=1))
         # Now do for other direction
 
         direction = 'reverse'
@@ -367,22 +371,22 @@ def preprocess_whitelight(visit
 
         rallspec1d=np.ma.sum(rallspec,axis=1)
         rallerr1d=np.sqrt(np.ma.sum(rallerr*rallerr, axis=1))
-        rmedian_flux = np.median(np.ma.sum(rallspec1d, axis=1))
+        rmedian_flux = np.ma.median(np.ma.sum(rallspec1d, axis=1))
 
         dir_factor = median_flux / rmedian_flux
         #dir_factor=1
-        rallspec1d = rallspec1d * dir_factor
-        rallerr1d = rallerr1d * dir_factor
+
+        #rallspec1d = rallspec1d * dir_factor
+        #rallerr1d = rallerr1d * dir_factor
 
         # Define array that has 0s for forward scan and 1s for reverse
         dir_array = np.append(np.zeros_like(alldate), np.ones_like(rdate))
-        alldate = np.ma.append(alldate,rdate)
+        alldate = np.append(alldate,rdate)
         allspec1d = np.ma.append(allspec1d, rallspec1d, axis=0)
         allerr1d = np.ma.append(allerr1d, rallerr1d, axis=0)
         direction = 'both'
 
 
-    
     # Put in correct time order
     date_order=np.argsort(alldate)
     dir_array = dir_array[date_order]
@@ -402,8 +406,12 @@ def preprocess_whitelight(visit
     #0, 19, 38, 57
     # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
+
+    #if remove_first == True:
+    #    alldate, allspec, allerr
     orbit=get_orbits(alldate)
 
+    
     planet=visit[:-8]
     props, errs=inputs('../planets/%s/inputs.dat' % planet, transit)
     a1=gl.get_limb(planet,14000.,'a1')
@@ -439,7 +447,9 @@ def preprocess_whitelight(visit
         dir_array=dir_array[first_data:last_data]
         #allspec2d=allspec[first_data:last_data,:,:]
         #allerr2d=allerr[first_data:last_data,:,:]
-        spec1d=allspec[first_data:last_data,:]
+        print('Are err1d and spec1d correctly defined below?')
+        breakpoint()
+        spec1d=allspec1d[first_data:last_data,:]
         err1d=allerr[first_data:last_data,:]
         #allspec1d=np.ma.sum(allspec2d,axis=1) #spectra for each exposure: these axes may be backwards
         #allerr1d=np.sqrt(np.ma.sum(allerr2d*allerr2d, axis=1))
@@ -447,12 +457,11 @@ def preprocess_whitelight(visit
         lighterr=np.sqrt(np.ma.sum(err1d*err1d, axis=1))
 
         user_inputs[5], user_inputs[6] = first_data, last_data
-    sss
+
     if check == True:
         user_inputs=np.zeros(7)
         while check2==True:
             if data_plots==True:
-                print('woo')
                 #err=np.sqrt(np.sum(np.sum(allerr[:,:,:]*allerr[:,:,:], axis=1), axis=1))
                 #fl= np.sum(allspec[:,:,:], (1,2))
                 err=np.sqrt(np.sum(allerr1d*allerr1d, axis=1))
@@ -461,12 +470,15 @@ def preprocess_whitelight(visit
                 plt.xlabel('MJD')
                 plt.ylabel('Total Flux')
                 plt.show(block=False)
+
             first = input("Enter the first orbit to include (starting from 0): ")
             first_orbit=int(first)
             user_inputs[0]=first_orbit
             last= input("Enter the last orbit to include (starting form 0): ")
             last_orbit=int(last)
-            if data_plots==True: plt.close()
+            if data_plots==True:
+                plt.clf()
+                plt.close()
             user_inputs[1]=last_orbit
 
             #allspec1d=np.ma.sum(allspec,axis=1).data
@@ -494,7 +506,9 @@ def preprocess_whitelight(visit
 
             ans = input("Is this correct? (Y/N): ")
             if ans.lower() in ['y','yes']: check2=False
-            if data_plots==True:  plt.close()
+            if data_plots==True:
+                plt.clf()
+                plt.close()
 
 
     props[1]=event_time(date, props)
@@ -570,7 +584,6 @@ def preprocess_whitelight(visit
         openinc = False
         mcmc = False
 
-    save_name = visit + '/' + direction
     #savemc = visit
     save_model_info = False
     #save_model_info = visit
@@ -589,13 +602,27 @@ def preprocess_whitelight(visit
     #                          openinc=openinc, openar=openar, fixtime=fixtime,
     #                          transit=transit, savewl=visit)
     print(props)
-    sss
-
-    results=wl.whitelight2020(props, date, spec1d.data,  err1d.data, dir_array,
-                              plotting=fit_plots, mcmc=mcmc, norandomt=norandomt,
-                              openinc=openinc, openar=openar, fixtime=fixtime,
-                              transit=transit, save_mcmc=save_mcmc, save_model_info=save_model_info,
-                              save_name =save_name)
+    save_name = visit + '/' + direction
+    results=wl.whitelight2020(props
+                              , date
+                              , spec1d.data
+                              , err1d.data
+                              , dir_array
+                              , plotting=fit_plots
+                              , mcmc=mcmc
+                              , norandomt=norandomt
+                              , openinc=openinc
+                              , openar=openar
+                              , fixtime=fixtime
+                              , linear_slope=linear_slope
+                              , quad_slope=quad_slope
+                              , exp_slope=exp_slope
+                              , log_slope=log_slope
+                              , one_slope=one_slope
+                              , transit=transit
+                              , save_mcmc=save_mcmc
+                              , save_model_info=save_model_info
+                              , save_name=save_name)
 
     #direction = 'forward'
     if save_processed_data == True:
@@ -650,6 +677,7 @@ if __name__=='__main__':
     direction = config.get('DATA', 'scan_direction')
     transit = config.getboolean('DATA', 'transit')
     check = config.getboolean('DATA', 'check')
+    ignore_first_exposures = config.getboolean('DATA', 'ignore_first_exposures')
     inp_file = config.getboolean('DATA', 'inp_file')
     data_plots = config.getboolean('DATA', 'data_plots')
 
@@ -658,7 +686,13 @@ if __name__=='__main__':
     openinc = config.getboolean('MODEL', 'openinc')
     fixtime = config.getboolean('MODEL', 'fixtime')
     norandomt = config.getboolean('MODEL', 'norandomt')
+    linear_slope = config.getboolean('MODEL', 'linear_slope')
+    quad_slope = config.getboolean('MODEL', 'quad_slope')
+    exp_slope = config.getboolean('MODEL', 'exp_slope')
+    log_slope = config.getboolean('MODEL', 'log_slope')
+    one_slope = config.getboolean('MODEL', 'one_slope')
     fit_plots = config.getboolean('MODEL', 'fit_plots')
+   
 
     save_mcmc = config.getboolean('SAVE', 'save_mcmc')
     save_model_info = config.getboolean('SAVE', 'save_model_info')
@@ -672,6 +706,7 @@ if __name__=='__main__':
                                                 , direction
                                                 , transit=transit
                                                 , check=check
+                                                , ignore_first_exposures=ignore_first_exposures
                                                 , inp_file=inp_file
                                                 , data_plots=data_plots
                                                 , save_processed_data=save_processed_data
@@ -680,10 +715,16 @@ if __name__=='__main__':
                                                 , norandomt=norandomt
                                                 , openar=openar
                                                 , openinc=openinc
+                                                , linear_slope=linear_slope
+                                                , quad_slope=quad_slope
+                                                , exp_slope=exp_slope
+                                                , log_slope=log_slope
+                                                , one_slope=one_slope
                                                 , fit_plots=fit_plots
                                                 , mcmc=mcmc
                                                 , save_mcmc=save_mcmc)
 
+ 
     print(best_results)
     print("Marg Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
     print("Marg Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
