@@ -1316,21 +1316,21 @@ INPUTS:
 
         try:
             # NOTE: I increased model numbers and changed param amount, so I needed a new file here
-            cur=pd.read_csv('./wl_models_info.csv', index_col=[0,1])
+            cur=pd.read_csv('./data_outputs/wl_models_info.csv', index_col=[0,1])
             cur=cur.drop(save_name, level=0, errors='ignore')
             cur=pd.concat((cur,wl), sort=False)
 
-            cur.to_csv('./wl_models_info.csv', index_label=['Obs', 'Type'])
+            cur.to_csv('./data_outputs/wl_models_info.csv', index_label=['Obs', 'Type'])
         except IOError:
-            wl.to_csv('./wl_models_info.csv', index_label=['Obs', 'Type'])
+            wl.to_csv('./data_outputs/wl_models_info.csv', index_label=['Obs', 'Type'])
 
         try:
-            curr=pd.read_csv('./wl_data.csv', index_col=[0,1])
+            curr=pd.read_csv('./data_outputs/wl_data.csv', index_col=[0,1])
             curr=curr.drop(save_name, level=0, errors='ignore')
             curr=pd.concat((curr,wl_data))
-            curr.to_csv('./wl_data.csv', index_label=['Obs', 'Type'])
+            curr.to_csv('./data_outputs/wl_data.csv', index_label=['Obs', 'Type'])
         except IOError:
-            wl_data.to_csv('./wl_data.csv',index_label=['Obs', 'Type'])
+            wl_data.to_csv('./data_outputs/wl_data.csv',index_label=['Obs', 'Type'])
 
     return [marg_depth, marg_depth_err, marg_epoch
             , marg_epoch_err, marg_inc, marg_inc_err

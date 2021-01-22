@@ -430,7 +430,7 @@ def preprocess_whitelight(visit
     check2=check
     if check == False:
         if inp_file == True:
-            df=pd.read_csv('./preprocess_info.csv')
+            df=pd.read_csv('./data_outputs/preprocess_info.csv')
             df=df[df.loc[:,'Transit']==transit]
             user_inputs=df.loc[visit+direction,'User Inputs'].values
         else:
@@ -641,19 +641,19 @@ def preprocess_whitelight(visit
         sys_p=sys_p.set_index('Visit')
 
         try:
-            cur=pd.read_csv('./processed_data.csv', index_col=[0,1])
+            cur=pd.read_csv('./data_outputs/processed_data.csv', index_col=[0,1])
             cur=cur.drop(save_name, level=0, errors='ignore')
             cur=pd.concat((cur,processed_data), sort=False)
-            cur.to_csv('./processed_data.csv', index_label=['Obs', 'Type'])
+            cur.to_csv('./data_outputs/processed_data.csv', index_label=['Obs', 'Type'])
         except IOError:
-            processed_data.to_csv('./processed_data.csv', index_label=['Obs','Type'])
+            processed_data.to_csv('./data_outputs/processed_data.csv', index_label=['Obs','Type'])
         try:
-            curr=pd.read_csv('./system_params.csv', index_col=0)
+            curr=pd.read_csv('./data_outputs/system_params.csv', index_col=0)
             curr=curr.drop(save_name, errors='ignore')
             curr=pd.concat((curr,sys_p), sort=False)
-            curr.to_csv('./system_params.csv')
+            curr.to_csv('./data_outputs/system_params.csv')
         except IOError:
-            sys_p.to_csv('./system_params.csv', index_label='Obs')
+            sys_p.to_csv('./data_outputs/system_params.csv', index_label='Obs')
 
     return [results, user_inputs]
 
@@ -737,10 +737,10 @@ if __name__=='__main__':
     inp['Transit']=transit
     inp=inp.set_index('Visit')
     try:
-        cur=pd.read_csv('./preprocess_info.csv', index_col=0)
+        cur=pd.read_csv('./data_outputs/preprocess_info.csv', index_col=0)
         cur=cur.drop(visit+'/'+direction, errors='ignore')
         cur=pd.concat((cur,inp), sort=False)
-        cur.to_csv('./preprocess_info.csv')
+        cur.to_csv('./data_outputs/preprocess_info.csv')
     except IOError:
-        inp.to_csv('./preprocess_info.csv')
+        inp.to_csv('./data_outputs/preprocess_info.csv')
 
