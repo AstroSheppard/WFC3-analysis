@@ -1,23 +1,19 @@
 import configparser
 import os
 import sys
-
-import marg_mcmc as wl
-
-sys.path.insert(0, '../bin_analysis')
+import time
 
 import glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from astropy.io import fits
-import time
 
-#import whitelight2018 as wl
-
+import marg_mcmc as wl
 import batman
+# Set path to read in get_limb.py from bin_analysis
+sys.path.insert(0, '../bin_analysis')
 import get_limb as gl
-#from wave_solution import orbits
 
 def event_time(date, properties):
     """Program to determine the expected event time
@@ -25,11 +21,16 @@ def event_time(date, properties):
      date: 1D array of the date of each exposure (MJD)
      properties: 1D array containing the last observed eclipse
      and the period. (MJD, days)"""
-    time=properties[1]
-    period=properties[4]
+    time = properties[1, 0]
+    time_error = properties[1, 1]
+    period = properties[4, 0]
+    period_error = properties[4, 1]
+    i = 0
     while time < date[0]:
-        time+=period
-    return float(time)
+        i += 1
+        time += period
+    epoch_error = np.sqrt(time_error**2 + (i*period_error)**2)
+    return float(time), float(epoch_error)
 
 def get_orbits(date):
     """Procedure to organize light curve data by HST orbit"""
@@ -45,53 +46,51 @@ def inputs(data, transit=True):
 
     """ Function to read in priors for a system.
     INPUTS:
-    data: data table of priors for a particular planet
+    data: Data table of priors for a particular planet
     OUTPUTS:
-    Returns array of system properties: [rprs, central event time, inc
-    ,a/r, period, depth]
+    Returns array of system properties with corresponding uncertainties: 
+    [rprs, central event time, inclination, orbit distance/stellar radius (a/Rs),
+    period, transit/eclipse depth]
     """
-    inp_values=pd.read_table(data,sep=' ', index_col=None)
-    data_arr=inp_values.iloc[:,2].values
-    labels=inp_values.iloc[:,0].values
-    param_errs=inp_values.iloc[:,3].values
+    inp_values = pd.read_table(data, sep=' ', index_col=None)
+    data_arr = inp_values.iloc[:,2].values
+    labels = inp_values.iloc[:,0].values
+    param_errs = inp_values.iloc[:,3].values
 
-    # Rj-m, Rsolar-m,AU-m, JD -> MJD
-
-    print("Fix this to read in a/rs and rp/rs automatically")
-
-    conversions=np.array([6.9911e7, 6.957e8, 1.49598e11, -2400000.5])
-    inc=data_arr[5]
-    period=data_arr[4]
-    a_R=data_arr[7]*conversions[2]/(data_arr[1]*conversions[1])
-    a_R_err=np.sqrt((param_errs[7]*conversions[2]/data_arr[1]/conversions[1])**2
-                    + (a_R*param_errs[1]/conversions[1])**2)
-    rprs = data_arr[0]*conversions[0]/(data_arr[1]*conversions[1])
-
+    # Conversions are R_Jup to meters, R_solar to meters, AU to meters,
+    # and JD to MJD.
+    conversions = np.array([6.9911e7, 6.957e8, 1.49598e11, -2400000.5])
+    period = data_arr[4]
+    inc = data_arr[5]
+    rprs = data_arr[8]
+    rprs_err = param_errs[8]
+    a_R = data_arr[9]
 
     if transit==True:
-        epoch=data_arr[6]+conversions[3]
-        depth=rprs*rprs
+        epoch = data_arr[6] + conversions[3]
+        depth = rprs * rprs
+        depth_err = 2 * rprs * rprs_err
     else:
-        epoch=data_arr[6]+conversions[3]+period/2.
+        epoch = data_arr[6] + conversions[3] + period/2.
         depth = rprs*rprs*(data_arr[2]/data_arr[3])/3
 
+    # Save important inputs to properties (props) array.
+    props = np.zeros(6)
+    props[0] = rprs
+    props[1] = epoch
+    props[2] = inc
+    props[3] = a_R
+    props[4] = period
+    props[5] = depth
 
-
-    props=np.zeros(6)
-    props[0]=rprs
-    props[1]=epoch
-    props[2]=inc
-    props[3]=a_R
-    props[4]=period
-    props[5]=depth
-
-    errors=np.zeros(6)
-    errors[0]=0
-    errors[1]=param_errs[6]
-    errors[2]=param_errs[5]
-    errors[3]=a_R_err
-    errors[4]=param_errs[4]
-    errors[5]=0
+    # Save corresponding errors, mostly for priors for MCMC fitting.
+    errors = np.zeros(6)
+    errors[0] = rprs_err
+    errors[1] = param_errs[6]
+    errors[2] = param_errs[5]
+    errors[3] = param_errs[9]
+    errors[4] = param_errs[4]
+    errors[5] = depth_err
 
     return [props,errors]
 
@@ -198,6 +197,7 @@ def preprocess_whitelight(visit
                           , openinc=False
                           , openar=True
                           , fixtime=False
+                          , ld_type="nonlinear"
                           , linear_slope=True
                           , quad_slope=False
                           , exp_slope=False
@@ -251,10 +251,8 @@ def preprocess_whitelight(visit
         data=np.sort(np.asarray(glob.glob(folder)))
         nexposure = len(data)
         print('There are %d exposures in this visit' % nexposure)
-
         alldate=np.zeros(len(data))
         time=np.zeros_like(alldate)
-
         test=fits.open(data[0])
         xlen, ylen = test[0].data.shape
         test.close()
@@ -262,7 +260,6 @@ def preprocess_whitelight(visit
         ylen-=2*y
         allspec=np.ma.zeros((len(data),xlen, ylen))
         allerr=np.zeros((len(data),xlen,ylen))
-
         xmin=x
         xmax=xlen-x
         ymin=y
@@ -407,32 +404,51 @@ def preprocess_whitelight(visit
     # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
-    #if remove_first == True:
-    #    alldate, allspec, allerr
-    orbit=get_orbits(alldate)
-
-    
-    planet=visit[:-8]
-    props, errs=inputs('../planets/%s/inputs.dat' % planet, transit)
-    a1=gl.get_limb(planet,14000.,'a1')
-    a2=gl.get_limb(planet,14000.,'a2')
-    a3=gl.get_limb(planet,14000.,'a3')
-    a4=gl.get_limb(planet,14000.,'a4')
-    props=np.append(props, [a1,a2,a3,a4])
-    errs=np.append(errs, np.zeros(4))
-    props_hold=props.copy()
+    if ignore_first_exposures == True:
+        orbit = get_orbits(alldate)
+        firsts = orbit[:-1]
+        laters = orbit[1]+np.arange(2)
+        firsts = np.append(firsts, firsts+1)
+        firsts = np.append(firsts, laters)
+        last_exp = orbit[-1]
+        all_indeces = np.arange(last_exp)
+        index = np.delete(all_indeces, firsts)
+        dir_array = dir_array[index]
+        alldate = alldate[index]
+        allspec1d = allspec1d[index]
+        allerr1d = allerr1d[index]
+    orbit = get_orbits(alldate)
+    planet = visit[:-8]
+    props, errs = inputs('../planets/%s/inputs.dat' % planet, transit)
+    if ld_type=='nonlinear':
+        a1 = gl.get_limb(planet,14000.,'a1')
+        a2 = gl.get_limb(planet,14000.,'a2')
+        a3 = gl.get_limb(planet,14000.,'a3')
+        a4 = gl.get_limb(planet,14000.,'a4')
+    elif ld_type=='linear':
+        a1 = gl.get_limb(planet,14000., 'u')
+        a2 = 0
+        a3 = 0
+        a4 = 0
+    else:
+        raise ValueError('Error: Must choose nonlinear (fixed) ' \
+                         'and or linear (open) limb-darkening model.')
+    props = np.append(props, [a1,a2,a3,a4])
+    errs = np.append(errs, np.zeros(4))
+    props = np.vstack((props, errs)).T
+    props_hold = props.copy()
     #orbit = np.zeros(1)
 
     print("Number of total orbits: %d" % (len(orbit)-1))
 
     # Choose which orbits to include in the eclipse fitting. 1-2 on either
     # side of the eclipse is recommended
-    check2=check
-    if check == False:
-        if inp_file == True:
-            df=pd.read_csv('./data_outputs/preprocess_info.csv')
-            df=df[df.loc[:,'Transit']==transit]
-            user_inputs=df.loc[visit+direction,'User Inputs'].values
+    check2 = check
+    if check==False:
+        if inp_file==True:
+            df = pd.read_csv('./data_outputs/preprocess_info.csv')
+            df = df[df.loc[:,'Transit']==transit]
+            user_inputs = df.loc[visit+direction,'User Inputs'].values
         else:
             sys.exit('Either allow checking or give csv file with pandas info.')
 
@@ -511,9 +527,8 @@ def preprocess_whitelight(visit
                 plt.close()
 
 
-    props[1]=event_time(date, props)
-    user_inputs[4]=props[1]
-
+    props[1, :] = event_time(date, props)
+    user_inputs[4] = props[1, 0]
 
     #  We are only interested in scatter within orbits, so correct for flux
     #  between orbits by setting the median of each orbit to the median of
@@ -570,29 +585,6 @@ def preprocess_whitelight(visit
     #         if ploton==True: plt.close()
     #         if ans2.lower() in ['y','yes']: check=False
 
-    """if transit == True:
-        fixtime = False
-        norandomt = True
-        #openar = True
-        openar = True
-        openinc = False
-        mcmc = False
-    else:
-        fixtime = True
-        norandomt = True
-        openar = False
-        openinc = False
-        mcmc = False
-
-    #savemc = visit
-    save_model_info = False
-    #save_model_info = visit
-
-    #visit=False
-    #savedata=False
-    save_mcmc=False
-    #savewl=False"""
-
     # Set inclination (2), ars (3) to desired value if you want
     #props[2]=89.17
     #props[3]=5.55
@@ -614,6 +606,7 @@ def preprocess_whitelight(visit
                               , openinc=openinc
                               , openar=openar
                               , fixtime=fixtime
+                              , ld_type=ld_type
                               , linear_slope=linear_slope
                               , quad_slope=quad_slope
                               , exp_slope=exp_slope
@@ -635,8 +628,10 @@ def preprocess_whitelight(visit
         processed_data['sh']=np.append(sh,sh)
         processed_data['Transit']=transit
         processed_data['Scan Direction'] = np.append(dir_save, dir_save)
-        sys_p=pd.DataFrame(np.vstack((props_hold, errs)).T, columns=['Properties'
-                                                                 , 'Errors'])
+        #sys_p=pd.DataFrame(np.vstack((props_hold, errs)).T, columns=['Properties'
+        #                                                         , 'Errors'])
+        sys_p=pd.DataFrame(props_hold, columns=['Properties'
+                                                , 'Errors'])
         sys_p['Visit']=save_name
         sys_p=sys_p.set_index('Visit')
 
@@ -685,6 +680,7 @@ if __name__=='__main__':
     openar = config.getboolean('MODEL', 'openar')
     openinc = config.getboolean('MODEL', 'openinc')
     fixtime = config.getboolean('MODEL', 'fixtime')
+    ld_type = config.get('MODEL', 'limb_type')
     norandomt = config.getboolean('MODEL', 'norandomt')
     linear_slope = config.getboolean('MODEL', 'linear_slope')
     quad_slope = config.getboolean('MODEL', 'quad_slope')
@@ -699,7 +695,7 @@ if __name__=='__main__':
     save_processed_data = config.getboolean('SAVE', 'save_processed_data')
     
     
-    #assert(check != inp_file)
+    # assert(check != inp_file)
 
     print(visit)
     best_results, inputs= preprocess_whitelight(visit
@@ -715,6 +711,7 @@ if __name__=='__main__':
                                                 , norandomt=norandomt
                                                 , openar=openar
                                                 , openinc=openinc
+                                                , ld_type=ld_type
                                                 , linear_slope=linear_slope
                                                 , quad_slope=quad_slope
                                                 , exp_slope=exp_slope

@@ -1,4 +1,3 @@
-
 import sys
 import time
 import shutil
@@ -17,7 +16,6 @@ import batman
 import emcee
 import corner
 import pickle
-
 
 from wave_solution import orbits
 from kapteyn import kmpfit
@@ -74,7 +72,7 @@ def plot_chain(chain, n, lab='param', save=False, mc_dir='.'):
         plt.show()
     return None
 
-def get_sys_model(p, phase, HSTphase, sh, dir_array):
+def get_sys_model(p, phase, HSTphase, sh, dir_array, one_slope=True):
     # The first line makes sure the forward slope only applies to
     # the forward scans and the reverse slope (p[26]) only applies to reverse
     # scans.
@@ -85,7 +83,7 @@ def get_sys_model(p, phase, HSTphase, sh, dir_array):
     # one_slope, and if true forces reverse and forward scan exposures to
     # be fit with a single slope. This should always be true for non-linear
     # slopes.
-    if single_slope == True:
+    if one_slope == True:
         slope_directions = np.zeros_like(dir_array)
     else:
         slope_directions = dir_array
@@ -98,7 +96,7 @@ def get_sys_model(p, phase, HSTphase, sh, dir_array):
     systematic_model = p[18]*systematic_model*(1-dir_array) + p[25]*systematic_model*dir_array
     return systematic_model
 
-def get_lightcurve_model(p, date, limb="nonlinear", transit=False):
+def get_lightcurve_model(p, date, limb_type="nonlinear", transit=False):
 
     params=batman.TransitParams()
     params.w=90.
@@ -112,12 +110,13 @@ def get_lightcurve_model(p, date, limb="nonlinear", transit=False):
 
     if transit==True:
         params.t0=tc
-        if limb=="nonlinear":
+        params.limb_dark=limb_type
+        if limb_type=="nonlinear":
             params.u=p[12:16]
-            params.limb_dark="nonlinear"
-        if limb=="quadratic":
+        if limb_type=="quadratic":
             params.u=p[12:14]
-        params.limb_dark=limb
+        if limb_type=="linear":
+            params.u=[p[12]]
         m=batman.TransitModel(params, date, fac=0.0315)
         model=m.light_curve(params)
     else:
@@ -130,7 +129,7 @@ def get_lightcurve_model(p, date, limb="nonlinear", transit=False):
 
     return model
 
-def lightcurve(p, x, sh, HSTphase, dir_array, transit=False):
+def lightcurve(p, x, sh, HSTphase, dir_array, transit=False, ld_type="nonlinear", one_slope=True):
 
     """ Function used by MPFIT to fit data to lightcurve model.
 
@@ -162,12 +161,10 @@ def lightcurve(p, x, sh, HSTphase, dir_array, transit=False):
     phase = (x-p[1])/Per
     phase = phase - np.floor(phase)
     phase[phase > 0.5] = phase[phase > 0.5] - 1.0
-    #sss
 
-    systematic_model=get_sys_model(p,phase,HSTphase,sh, dir_array)
-    lcmodel=get_lightcurve_model(p, x, transit=transit)
+    systematic_model=get_sys_model(p,phase,HSTphase,sh, dir_array, one_slope=one_slope)
+    lcmodel=get_lightcurve_model(p, x, transit=transit, limb_type=ld_type)
     model=lcmodel*systematic_model
-    #model=lcmodel * p[1] * systematic_model
 
     return model
 
@@ -231,36 +228,53 @@ def lnprior(theta, theta_initial, theta_error, syst, transit=True):
         #i=0
         #print 'test %d' % i
         #i+=1
+        
+        # First, set uninformative prior on square root of transit depth.
         if syst[0]==0 and not 0 < theta[0] < 0.2: return -np.inf
-        if syst[1]==0 and not theta_initial[1]-0.2 < theta[1] < theta_initial[1]+0.2: return -np.inf
-        if syst[2]==0 and not -4 < np.log10(np.abs(theta[2])) < 7:  return -np.inf
-        if syst[3]==0 and not -4 < np.log10(np.abs(theta[3])) < 7:  return -np.inf
-        if syst[4]==0 and not -4 < np.log10(np.abs(theta[4])) < 7:  return -np.inf
-        if syst[5]==0 and not -4 < np.log10(np.abs(theta[5])) < 7:  return -np.inf
-        if syst[6]==0 and not -4 < np.log10(np.abs(theta[6])) < 7:  return -np.inf
-        if syst[7]==0 and not -4 < np.log10(np.abs(theta[7])) < 7:  return -np.inf
-        if syst[8]==0 and not -4 < np.log10(np.abs(theta[8])) < 7:  return -np.inf
-        if syst[9]==0 and not -4 < np.log10(np.abs(theta[9])) < 7:  return -np.inf
+        
+        # Set informative prior on center of event time.
+        # if syst[1]==0 and not theta_initial[1]-5*theta_error[1] < theta[1] < theta_initial[1]+5*theta_error[1]: return -np.inf
+        # Also allow Gaussian prior on center of event time.
+        if syst[1] == 0: test[1]=scipy.stats.norm.pdf(theta[1], theta_initial[1], theta_error[1])
+
+        # Set uninformative log-priors on systematic polynomial coefficients.
+        if syst[2]==0 and not -6 < np.log10(np.abs(theta[2])) < 7:  return -np.inf
+        if syst[3]==0 and not -6 < np.log10(np.abs(theta[3])) < 7:  return -np.inf
+        if syst[4]==0 and not -6 < np.log10(np.abs(theta[4])) < 7:  return -np.inf
+        if syst[5]==0 and not -6 < np.log10(np.abs(theta[5])) < 7:  return -np.inf
+        if syst[6]==0 and not -6 < np.log10(np.abs(theta[6])) < 7:  return -np.inf
+        if syst[7]==0 and not -6 < np.log10(np.abs(theta[7])) < 7:  return -np.inf
+        if syst[8]==0 and not -6 < np.log10(np.abs(theta[8])) < 7:  return -np.inf
+        if syst[9]==0 and not -6 < np.log10(np.abs(theta[9])) < 7:  return -np.inf
+        
+        # Ensure inclination is less than 90 degrees.
         if not theta[10] < 90.0: return -np.inf
+        # Set physically motivted Gaussian priors on inclination and a/rs.
         if syst[10] == 0: test[10]=scipy.stats.norm.pdf(theta[10], theta_initial[10], theta_error[10])
         if syst[11] == 0: test[11]=scipy.stats.norm.pdf(theta[11], theta_initial[11], theta_error[11])
+        
+        # Limit linear LD coefficient to be between 0 and 1.
+        if syst[12]==0 and not -1.0 < theta[12] < 1.0:  return -np.inf
 
+        # Set uninformative prior on eclipse depth, if applicable.
         if syst[17] == 0 and not 0 < theta[17] < 0.2: return -np.inf
-        if not .5 < theta[18] < 20:  return -np.inf
+        
+        # Set uninformative priors of slope parameters. Note that log and exponential
+        # slope parameters may still need fine-tuning.
+        if not .5 < theta[18] < 5:  return -np.inf
         if syst[19]==0 and not -5 < theta[19] < 3:  return -np.inf
-
         if syst[20]==0 and not -5 < theta[20] < 3:  return -np.inf
-        print('test 20')
+        #print('test 20')
         if syst[21]==0 and not -4 < np.log10(np.abs(theta[21])) < 3:  return -np.inf
-        print('test 21')
+        #print('test 21')
         if syst[22]==0 and not -10 < theta[22] < 10:  return -np.inf
-        print('test 22')
+        #print('test 22')
         if syst[23]==0 and not  -4 < np.log10(np.abs(theta[23])) < 3:  return -np.inf
-        print('test 23')
+        #print('test 23')
         if syst[24]==0 and not .5 < theta[24] < 200:  return -np.inf
-        print('test 24')
-        if not .9 < theta[25] < 1.1:  return -np.inf
-        if syst[26]==0 and not -5 < theta[16] < 3:  return -np.inf
+        #print('test 24')
+        if not .5 < theta[25] < 5:  return -np.inf
+        if syst[26]==0 and not -5 < theta[26] < 3:  return -np.inf
         if syst[27]==0 and not -5 < theta[27] < 3:  return -np.inf
         if syst[28]==0 and not -4 < np.log10(np.abs(theta[28])) < 3:  return -np.inf
         if syst[29]==0 and not -10 < theta[29] < 10:  return -np.inf
@@ -269,17 +283,16 @@ def lnprior(theta, theta_initial, theta_error, syst, transit=True):
         if np.isfinite(np.sum(np.log(test))):
             return np.sum(np.log(test))
         else:
-            print('how is this infinite?')
+            print('Parameter value outside prior range')
             return -np.inf
-        #print 'priors are good'
-        #return 0.0
     else:
         sys.exit("Didn't do eclipses yet")
 
-def residuals(p,data):
-    x, y, err, sh, HSTphase, dir_array, transit = data
-    ym=lightcurve(p, x, sh, HSTphase, dir_array, transit=transit)
-    return (y-ym)/err
+def residuals(p, data):
+    x, y, err, sh, HSTphase, dir_array, transit, ld_type, one_slope = data
+    ym = lightcurve(p, x, sh, HSTphase, dir_array, transit=transit
+                    , ld_type=ld_type, one_slope=one_slope)
+    return (y-ym) / err
 
 def get_shift(allspec):
     nexposure=allspec.shape[0]
@@ -446,8 +459,8 @@ def systematic_model_grid_selection(size=4
 
 def whitelight2020(p_start, img_date, allspec, allerr, dir_array, plotting=False
                    , mcmc = False, fixtime=False, norandomt=False, openinc=False
-                   , openar=False, linear_slope=True, quad_slope=False, exp_slope=False
-                   , log_slope=False, one_slope=True
+                   , openar=False, ld_type = "nonlinear", linear_slope=True
+                   , quad_slope=False, exp_slope=False, log_slope=False, one_slope=True
                    , save_mcmc=False, save_model_info=False, transit=False
                    , save_name=None):
     """
@@ -515,69 +528,84 @@ INPUTS:
     # without needing to make it input into many intermediate functions
     global single_slope
     single_slope = one_slope
-    # TOTAL NUMBER OF EXPOSURES IN THE OBSERVATION
+    
+    # Determine the number of exposures in light curve.
     nexposure = len(img_date)
 
-    # CALCULATE THE SHIFT IN DELTA_lambda
-    # sh = np.zeros(nexposure)
-    # nLag=3
-    # inp1=allspec[-1,:]-allspec[-1,:].mean()
+    # Set up data as arrays x (observation time) and y (normalized flux).
+    x = img_date
+    y = allspec.sum(axis=1)
+    err = np.sqrt(np.sum(allerr*allerr, axis=1))
 
-    # for i in trange(nexposure, desc='Performing cross correlation'):
-    #     Subtract mean to mimic
-    #     inp2=allspec[i,:]-allspec[i,:].mean()
-    #     corr_tuple = plt.xcorr(inp1, inp2,  maxlags=nLag)
-    #     lag,corr=corr_tuple[0],corr_tuple[1]
-    #     mx=np.argmax(corr)
-    #     srad=3
-    #     sublag=lag[max(mx-srad,0):max(mx+srad,2*nLag+1)]
-    #     subcorr=corr[max(mx-srad,0):max(mx+srad,2*nLag+1)]
-    #     p=np.polyfit(sublag, subcorr, 2)
-    #     sh[i]=p[1]/2./p[0]
+    # Determine theoretical limit on uncertainty, (in ppm)  which is approximately
+    # the photon error (err also incorporates additional noise from
+    # data reduction, such as background removal noise and read noise).
+    # For perfect model and reduction, scatter (standard deviation)
+    # in residuals will equal this value.
+    phot_err = 1e6 * np.median(err/y)
+    # phot_err=1e6/np.median(np.sqrt(y))
 
+    # Hold un-normalized (raw) data in order to save later.
+    orbit_start, orbit_end=orbits('holder', x=x, y=y, transit=transit)[1]
+    norm = np.median(y[orbit_start:orbit_end])
+    rawerr = err.copy()
+    rawflux = y.copy()
+    err = err/norm
+    y = y/norm
+
+    # Determine wavelength shift and HST phase, which are arguments
+    # in systematic models.
     sh = get_shift(allspec)
     HSTper = 96.36 / (24.*60.)
     HSTphase = (img_date-img_date[0])/HSTper
     HSTphase = HSTphase - np.floor(HSTphase)
     HSTphase[HSTphase > 0.5] = HSTphase[HSTphase > 0.5] -1.0
 
+    # Initialize every potential parameter, starting with astrophysical ones.
+    rprs = p_start[0, 0]
+    epoch = p_start[1, 0]
+    inclin = p_start[2, 0]
+    a_r = p_start[3, 0]
+    Per = p_start[4, 0]
+    # Depth shown as fp, which stands for Flux_planet, a remnant from eclipse depth origins.
+    fp=p_start[5, 0]
+    # Limb-darkening parameters shown as c1-c4.
+    c1=p_start[6, 0]
+    c2=p_start[7, 0]
+    c3=p_start[8, 0]
+    c4=p_start[9, 0]
+    # Forward-scan and reverse-scan normalizations
+    fnorm = 1.0
+    rnorm = 1.0
 
-    # SET THE CONSTANTS USING THE PRIORS
-    rprs = p_start[0]
-    epoch = p_start[1]
-    inclin = p_start[2]
-    a_r = p_start[3]
-    Per = p_start[4]
-    fp=p_start[5] #depth
-    c1=p_start[6]
-    c2=p_start[7]
-    c3=p_start[8]
-    c4=p_start[9]
-    fnorm = 1.0  # Forward norm
-    rnorm = 1.0             # Reverse norm, if two direction scan
+    # Initialize visit-long slope parameters. F/R indicate slope on
+    # forward or reverse scan light curves. Parameters ending in b
+    # and c are slope factor and slope phase, respectively.
+    flinear = 0.0
+    fquad = 0.0
+    fexpb = 0.0        
+    fexpc = 1.0
+    flogb = 0.0
+    flogc = 1.0
+    rlinear = 0.0
+    rquad = 0.0
+    rexpb = 0.0
+    rexpc = 1.0
+    rlogb = 0.0       
+    rlogc = 1.0
 
-    flinear = 0.0         # Linear Slope
-    fquad = 0.0         # Quadratic slope
-    fexpb = 0.0         # Exponential slope factor
-    fexpc = 1.0         # Exponential slope phase
-    flogb = 0.0         # Log slope factor
-    flogc = 1.0         # Log slope phase
-    rlinear = 0.0        # Reverse scan slope
-    rquad = 0.0         # Quadratic slope
-    rexpb = 0.0         # Exponential slope factor
-    rexpc = 1.0         # Exponential slope phase
-    rlogb = 0.0         # Log slope factor
-    rlogc = 1.0        # Log slope phase
-    xshift1 = 0.0   # X-shift in wavelength
-    xshift2 = 0.0   # X-shift^2 in wavelength
-    xshift3 = 0.0   # X-shift^3 in wavelength
-    xshift4 = 0.0   # X-shift^4 in wavelength
-    HSTP1 = 0.0     # HST orbital phase
-    HSTP2 = 0.0     # HST orbital phase^2
-    HSTP3 = 0.0     # HST orbital phase^3
-    HSTP4 = 0.0     # HST orbital phase^4
+    # Initialize the polynomial instrument-systematics related coefficients,
+    # wavelength shift and HST phase.
+    xshift1 = 0.0
+    xshift2 = 0.0
+    xshift3 = 0.0
+    xshift4 = 0.0
+    HSTP1 = 0.0
+    HSTP2 = 0.0
+    HSTP3 = 0.0
+    HSTP4 = 0.0
 
-    #PLACE ALL THE PRIORS IN AN ARRAY
+    # Initialize parameter array, p0.
     p0 = [rprs, epoch
           , HSTP1, HSTP2, HSTP3, HSTP4
           , xshift1, xshift2, xshift3, xshift4
@@ -587,6 +615,7 @@ INPUTS:
           , rnorm, rlinear, rquad
           , rexpb, rexpc, rlogb, rlogc]
 
+    # Array of labels for easier reference.
     lab = np.array(['Depth', 'Epoch', 'HST1', 'HST2'
                     , 'HST3', 'HST4', 'sh1','sh2'
                     , 'sh3', 'sh4', 'i', 'ars', 'c1'
@@ -597,7 +626,7 @@ INPUTS:
                     , 'rexpc', 'rlogb', 'rlogc' ])
 
     nParam=len(p0)
-    # SELECT THE SYSTEMATIC GRID OF MODELS TO USE
+    # Retrieve grid of systematic models to test.
     grid = systematic_model_grid_selection(size=4
                                            , dir_array=dir_array
                                            , transit=transit
@@ -609,7 +638,8 @@ INPUTS:
 
 
     nsys = len(grid[:,0])
-    #  SET UP THE ARRAYS  ;
+    # Initialize systematic-related arrays to hold results for
+    # every fitted systematic model.
     sys_depth = np.zeros((nsys,2))
     sys_model_x = np.zeros((nsys,500))
     sys_model = np.zeros((nsys,500))
@@ -621,49 +651,29 @@ INPUTS:
     sys_params_err = np.zeros((nsys,nParam))
     sys_evidence = np.zeros((nsys))
     sys_model_full=np.zeros((nsys,nexposure))
-
     phase = np.zeros(nexposure)
 
-    # Scatter of the residuals for each model
+    # Array to hold the scatter of the residuals for each systematic model.
     resid_stddev = np.zeros(nsys)
 
-    #run 1 AIC and parameters from the fit
+    # Arrays to save AIC and parameters from first KMPFIT fit.
     run1_AIC = np.zeros(nsys)
     run1_params = np.zeros((nsys,nParam))
-
-    #  ITERATION RUN
-    #  First run 4 trials with slightly shifted center of eclipse times
-    #  and secondary eclipse depths
-
+    
+    #  Optional: First run 4 trials with slightly shifted center
+    # of event times and depths.
+    
     ntrials=5
     tcenter = np.zeros(ntrials+1)
 
-    t1 = 5./60./24.
+    t1 = 5. / 60. / 24.
     tcenter[0] = epoch
 
     if fixtime==False and norandomt==False:
         tcenter[1:] = epoch + t1*np.random.normal(size=ntrials)
 
-    # Test arrays ;
     AIC_test = np.zeros(ntrials+1)
     depth_test = np.zeros(ntrials+1)
-
-    x = img_date
-    y=allspec.sum(axis=1)
-    err = np.sqrt(np.sum(allerr*allerr, axis=1))
-    #phot_err=1e6/np.median(np.sqrt(y))
-    phot_err=1e6*np.median(err/y)
-
-
-    # Normalised Data
-    
-    orbit_start, orbit_end=orbits('holder', x=x, y=y, transit=transit)[1]
-    norm=np.median(y[orbit_start:orbit_end])
-
-    rawerr=err.copy()
-    rawflux=y.copy()
-    err = err/norm
-    y = y/norm
 
     print('----------      ------------     ------------')
     print('          1ST FIT         ')
@@ -696,34 +706,33 @@ INPUTS:
                       rexpb, rexpc, rlogb, rlogc]
                 if openinc==True: system[10] = 0
                 if openar==True: system[11] = 0
+                if ld_type=='linear': system[12] = 0
                 if transit==False:
                     system[0]=1
                     system[17]=0
                 parinfo=[]
                 for i in range(len(p0)):
                     dic = {'fixed':system[i]}
+                    # if lab[i]=='c1':
+                    #     dic = {'fixed':system[i], 'limits': [0.0, 1.0]}
                     if lab[i]=='flogc' or lab[i]=='rlogc':
                         dic = {'fixed':system[i], 'limits': [0.5,None]}
                     if lab[i]=='fexpc' or lab[i]=='rexpc':
                         dic = {'fixed':system[i], 'limits': [0.0001,None]}
                     parinfo.append(dic)
-
-
-                #fa = {'x':x, 'y':y, 'err':err, 'sh':sh, 'HSTphase':HSTphase, 'transit':transit}
-                fa=(x,y,err,sh,HSTphase,dir_array,transit)
+                fa=(x, y, err, sh, HSTphase, dir_array, transit, ld_type, one_slope)
                 m1=kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
                 m1.fit()
-                #m = mpfit.mpfit(lightcurve,functkw=fa,parinfo=parinfo, fastnorm=True)
                 params_test=m1.params
 
                 # For each tested epoch time, get the depth and the AIC
                 # Make sure this is all computed correctly
-                AIC_test[n]=(2*len(x)*np.log(np.ma.median(err))+len(x)*np.log(2*np.pi)
-                             + m1.chi2_min + 2*m1.nfree)
+                AIC_test[n] = (2*len(x)*np.log(np.ma.median(err)) + len(x)*np.log(2*np.pi)
+                               + m1.chi2_min + 2*m1.nfree)
                 if transit==True:
                     depth_test[n] = params_test[0]*params_test[0]
                 else:
-                    depth_test[n]=params_test[17]
+                    depth_test[n] = params_test[17]
 
             # Find the epoch time with the lowest AIC. Use it (or the average of
             # values if multiple) to get starting depth and epoch time for
@@ -740,23 +749,21 @@ INPUTS:
             else:
                 fp=depth
 
-
-        
-        #Re-run the fitting process with the best prior as defined by the iterative fit
-        p0 = [rprs,epoch,
-              HSTP1,HSTP2,HSTP3,HSTP4,
-              xshift1 ,xshift2 ,xshift3,xshift4,
-              inclin,a_r,c1,c2,c3,c4,
-              Per,fp,fnorm, flinear, fquad,
-              fexpb, fexpc, flogb, flogc,
-              rnorm, rlinear, rquad,
-              rexpb, rexpc, rlogb, rlogc]
-
-        # MPFIT ;;;;;;;;;;;;;;;;;;;;;;;
+        # Re-run the fitting process with the best prior as defined by the iterative fit.
+        # Or, more commonly, when norandomt is false then this is the first model fit.
+        p0 = [rprs, epoch
+              , HSTP1, HSTP2, HSTP3, HSTP4
+              , xshift1, xshift2, xshift3, xshift4
+              , inclin, a_r, c1, c2, c3, c4
+              , Per, fp, fnorm, flinear, fquad
+              , fexpb, fexpc, flogb, flogc
+              , rnorm, rlinear, rquad
+              , rexpb, rexpc, rlogb, rlogc]
 
         if fixtime==True: system[1] = 1
         if openinc==True: system[10] = 0
         if openar==True: system[11] = 0
+        if ld_type=='linear': system[12] = 0
         if transit==False:
             system[0]=1
             system[17]=0
@@ -765,37 +772,34 @@ INPUTS:
             # parinfo.append({'value':p0[i], 'fixed':system[i]
             #                 , 'limited':[0,0], 'limits':[0.,0.]})
             dic = {'fixed':system[i]}
+            # if lab[i]=='c1':
+            #     dic = {'fixed':system[i], 'limits': [0.0, 1.0]}
             if lab[i]=='flogc' or lab[i]=='rlogc':
-                dic = {'fixed':system[i], 'limits': [0.5,None]}
+                dic = {'fixed':system[i], 'limits': [0.5, None]}
             if lab[i]=='fexpc' or lab[i]=='rexpc':
-                dic = {'fixed':system[i], 'limits': [0.0001,None]}
+                dic = {'fixed':system[i], 'limits': [0.0001, None]}
             parinfo.append(dic)
 
-        #fa = {'x':x, 'y':y, 'err':err, 'sh':sh, 'HSTphase':HSTphase, 'transit':transit}
-        fa=(x,y,err,sh,HSTphase,dir_array,transit)
-        m2=kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
+        fa = (x, y, err, sh, HSTphase, dir_array, transit, ld_type, one_slope)
+        m2 = kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
         m2.fit()
-        #m = mpfit.mpfit(lightcurve,functkw=fa,parinfo=parinfo, fastnorm=True)
-        params_w=m2.params
-        
-        AIC=(2*len(x)*np.log(np.median(err))+len(x)*np.log(2*np.pi)
-             + m2.chi2_min + 2*m2.nfree)
+        params_w = m2.params   
+        AIC = (2*len(x)*np.log(np.median(err)) + len(x)*np.log(2*np.pi)
+               + m2.chi2_min + 2*m2.nfree)
         if transit==True:
             print('Depth = ', np.square(params_w[0]), ' at ', params_w[1])
         else:
             print('Depth = ', params_w[17], ' at ', params_w[1])
 
-        # Re-Calculate each of the arrays dependent on the output parameters
-        phase = (x-params_w[1])/params_w[16]
+        # Re-calculate phase dependent on the output parameters.
+        phase = (x-params_w[1]) / params_w[16]
         phase -= np.floor(phase)
         phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
-        
-        # LIGHT CURVE MODEL: calculate the eclipse model for the resolution of the data points
-        # this routine is from MANDEL & AGOL (2002)
-
-        systematic_model = get_sys_model(params_w, phase, HSTphase, sh, dir_array)
-        lc_model = get_lightcurve_model(params_w, x, transit=transit)
+        # Calculate scatter in residuals for model.
+        # w_ is a meaningless placeholder to ensure no double-naming in code.
+        systematic_model = get_sys_model(params_w, phase, HSTphase, sh, dir_array, one_slope)
+        lc_model = get_lightcurve_model(params_w, x, transit=transit, limb_type=ld_type)
         w_model = lc_model * systematic_model
         w_residuals = (y - w_model)
 
@@ -803,25 +807,26 @@ INPUTS:
         run1_AIC[s] = AIC
         run1_params[s,:] = params_w
 
-        
-    #######################################
-
-    #Determine which of the systematic models initially gives the best fit
+    # Determine which of the systematic models initially gives the best fit.
     top = np.argmin(run1_AIC)
 
-    # Scale error by resid_stddev[top]
-    std=resid_stddev[top]
+    # Optional: scale error by the scatter in the residuals of the best fit
+    # model, if scatter is greater than the flux uncertainty.
+    # This assumes that the best model is "correct" and the extra scatter is due to some
+    # unknown, Gaussian uncertainty. This is a shaky assumption, but provides a
+    # reasonable increase in depth uncertainty.
+    std = resid_stddev[top]
     if np.median(err) < std:
-        scale=std/np.median(err)
+        scale = std / np.median(err)
         print(scale)
         #print 'Not inflating by this'
     else:
         scale=1
     #scale=1
-    error=err*scale
+    error = err * scale
 
-
-    
+    # Perform fit a final time with scaled flux errors
+    # (and better defined initial guesses). 
     print('----------      ------------     ------------')
     print('         FINAL FIT        ')
     print('----------      ------------     ------------')
@@ -835,11 +840,12 @@ INPUTS:
         if exp_slope==False and s>99:
             continue
         # Define the new priors as the parameters from the best fitting
-        # systematic model
+        # systematic model.
         p0=run1_params[s,:]
         if fixtime==True: systematics[1] = 1
         if openinc==True: systematics[10] = 0
         if openar==True: systematics[11] = 0
+        if ld_type=='linear': systematics[12] = 0
         if transit==False:
             systematics[0]=1
             systematics[17]=0
@@ -847,23 +853,28 @@ INPUTS:
 
         for i in range(len(p0)):
             dic = {'fixed':systematics[i]}
+            # if lab[i]=='c1':
+            #     dic = {'fixed':system[i], 'limits': [0.0, 1.0]}
             if lab[i]=='flogc' or lab[i]=='rlogc':
                 dic = {'fixed':systematics[i], 'limits': [0.5,None]}
             if lab[i]=='fexpc' or lab[i]=='rexpc':
                 dic = {'fixed':systematics[i], 'limits': [0.0001,None]}
             parinfo.append(dic)
 
-        fa=(x,y,error,sh,HSTphase,dir_array,transit)
-        m2=kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
+        fa = (x, y, error, sh, HSTphase, dir_array, transit, ld_type, one_slope)
+        m2 = kmpfit.Fitter(residuals=residuals, data=fa, parinfo=parinfo, params0=p0)
         m2.fit()
-        params=m2.params
-        xerror=m2.xerror
-        nfree=m2.nfree
-        #AIC=m2.rchi2_min + nfree
-        AIC=(2*len(x)*np.log(np.ma.median(error))+len(x)*np.log(2*np.pi)
-             + m2.chi2_min + 2*nfree)
+        params = m2.params
+        xerror = m2.xerror
+        nfree = m2.nfree
+        # AIC=m2.rchi2_min + nfree
+        AIC = (2*len(x)*np.log(np.ma.median(error)) + len(x)*np.log(2*np.pi)
+               + m2.chi2_min + 2*nfree)
 
-        stderror=m2.stderr
+        # Use either standard error (scaled for reduced chi-squared), or asymptotic error.
+        # stderror = m2.stderr
+        stderror=m2.xerror
+        
         print()
         print('Model ', s)
         print('reduced chi^2:', m2.rchi2_min)
@@ -875,45 +886,31 @@ INPUTS:
         else:
             print('Depth = ',params[17], ' at ', params[1])
 
-        # Re-Calculate each of the arrays dependent on the output parameters
+        # Re-calculate phase dependent on the output parameters.
         phase = (x-params[1])/params[16]
         phase -= np.floor(phase)
         phase[phase > 0.5] = phase[phase > 0.5] -1.0
 
-        # --------------------- #
-        #        EVIDENCE       #
-        #sigma_points = np.median(error)
-        #Npoint = len(x)
-        # EVIDENCE BASED ON AIC ;
-        #sys_evidence[s] = -Npoint*np.log(sigma_points)-0.5*Npoint*np.log(2*np.pi)-0.5*(AIC+nfree)
-        sys_evidence[s]=-.5*AIC
-        systematic_model=get_sys_model(params, phase, HSTphase, sh, dir_array)
-        lc_model=get_lightcurve_model(params, x, transit=transit)
-        #model=params[1]*lc_model*systematic_model
-        model=lc_model*systematic_model
+        # Hold AIC-based evidence for each model.
+        sys_evidence[s] = -.5*AIC
+        systematic_model = get_sys_model(params, phase, HSTphase, sh, dir_array, one_slope=one_slope)
+        lc_model = get_lightcurve_model(params, x, transit=transit, limb_type=ld_type)
+        model = lc_model * systematic_model
         corrected = y / systematic_model
         fit_residuals = (y - model)
-        ########
-        #fit_err = error/params[18]
         fit_err = error*(1-dir_array)*params[18] + error*dir_array*params[25]
-        #######
 
-        # Smooth Transit Model: change this from phase to time
         time_smooth = (np.arange(500)*0.002-.5)*params[16]+params[1]
         phase_smooth=np.arange(500)*.002-.5
-        smooth_model=get_lightcurve_model(params, time_smooth, transit=transit)
-        
-        # PLOTTING
+        smooth_model=get_lightcurve_model(params, time_smooth, transit=transit, limb_type=ld_type)
 
         if plotting == True:
             if s==0:
                 fig, ax = plt.subplots()
                 plt.show(block=False)
             plt.clf()
-            #if s > 0: plt.close()
             plt.errorbar(img_date, y, error,ecolor='red', color='red'
                          , marker='o', ls='', label='Data')
-            #plt.ylim([0.982, 1.005])
             plt.plot(img_date, systematic_model, color='blue', marker='o'
                      , ls='', label='Systematic Model')
             plt.errorbar(img_date, corrected, fit_err, marker='x', color='green'
@@ -924,24 +921,14 @@ INPUTS:
             xshift_power = 4 - np.sum(systematics[6:10])
             power_label = r'$\phi^%d$ + HST$^%d$ + $\delta^%d$' % (slope_power, hst_power, xshift_power)
             plt.text(0.3,0.9, power_label, transform=ax.transAxes)
-                #p0 = [rprs,epoch,
-    #      HSTP1,HSTP2,HSTP3,HSTP4,
-    #      xshift1 ,xshift2 ,xshift3,xshift4,
-    #      inclin,a_r,c1,c2,c3,c4,
-    #      Per,fp,fnorm, flinear, fquad,
-    #      fexpb, fexpc, flogb, flogc,
-    #      rnorm, rlinear, rquad,
-    #      rexpb, rexpc, rlogb, rlogc]
             plt.draw()
             plt.pause(0.1)
             #breakpoint()
 
-        # SAVE out the arrays for each systematic model ;
-
-        # replace stderror with xerror (asymptotic error)
+        # Save the output arrays for each systematic model.
         if transit==True:
             sys_depth[s,0] = np.square(params[0])
-            sys_depth[s,1] = stderror[0]*2.0*params[0]
+            sys_depth[s,1] = stderror[0] * 2.0 * params[0]
         else:
             sys_depth[s,0] = params[17]
             sys_depth[s,1] = stderror[17]
@@ -955,48 +942,37 @@ INPUTS:
         sys_params_err[s,:] = stderror
         sys_model_full[s,:] = model
 
-    #;;;;;;;;;;;;;;;;;;;
-    #;;;;;;;;
-    #;
-    #;MARGINALIZATION!!!
-    #;
-    #;;;;;;;;
-    #;;;;;;;;;;;;;;;;;;;
 
-
-
-    # ------------------------------- ;
-    #            EVIDENCE             ;
+    # With evidence (and other outputs) determined for each systematic
+    # model, we now marginalize over every model. 
     aics = sys_evidence
-    depth_array = sys_depth[:,0]
-    depth_err_array = sys_depth[:,1]
-    epoch_array = sys_params[:,1]
-    epoch_err_array = sys_params_err[:,1]
-    inc_array= sys_params[:,10]
-    inc_err_array=sys_params_err[:,10]
-    ar_array= sys_params[:,11]
-    ar_err_array=sys_params_err[:,11]
-    limb_array=sys_params[:,12:16]
-    limb_err_array=sys_params_err[:,12:16]
+    depth_array = sys_depth[:, 0]
+    depth_err_array = sys_depth[:, 1]
+    epoch_array = sys_params[:, 1]
+    epoch_err_array = sys_params_err[:, 1]
+    inc_array = sys_params[:, 10]
+    inc_err_array = sys_params_err[:, 10]
+    ar_array = sys_params[:, 11]
+    ar_err_array = sys_params_err[:, 11]
+    limb_array = sys_params[:, 12:16]
+    limb_err_array = sys_params_err[:, 12:16]
 
-    # Reverse sort as trying to MAXIMISE the negative log evidence
-    a=np.argsort(aics)[::-1]
-    best=np.argmax(aics)
+    # Reverse sort as trying to maximize the negative log(evidence).
+    a = np.argsort(aics)[::-1]
+    best = np.argmax(aics)
     print(best)
-    # print aics
-
     zero = np.where(aics < -300)
     if (len(zero) > 1): print('Some bad fits - evidence becomes negative')
     if (len(zero) > 24):
         sys.exit('Over half the systematic models have negative evidence, adjust and rerun')
 
     aics[aics < -300] = np.min(aics[aics>-300])
-
     beta=100.
-    #beta = np.min(aics)
 
-    w_q = (np.exp(aics-beta))/np.sum(np.exp(aics-beta))
-    bestfit=np.argmax(w_q)
+    # Determine weight for each model.
+    # Beta is a computational convenience, used to avoid very high and very low numbers.
+    w_q = (np.exp(aics-beta)) / np.sum(np.exp(aics-beta))
+    bestfit = np.argmax(w_q)
     n01 = np.where(w_q >= 0.1)
 
     stdResid = np.std(sys_residuals[bestfit,:])
@@ -1009,23 +985,22 @@ INPUTS:
     depth = depth_array
     depth_err = depth_err_array
 
-    # Marganilze depth formula 15 and 16 from Wakeford 2016
-    mean_depth=np.sum(w_q*depth)
-    theta_qi=depth
-    variance_theta_qi=depth_err*depth_err
+    # Marginalize depth using formulas 15 and 16 from Wakeford 2016.
+    mean_depth = np.sum(w_q*depth)
+    theta_qi = depth
+    variance_theta_qi = depth_err * depth_err
     error_theta_i = np.sqrt(np.sum(w_q*((theta_qi - mean_depth)**2 + variance_theta_qi )))
     print('Depth = %f  +/-  %f' % (mean_depth, error_theta_i))
     marg_depth = mean_depth
     marg_depth_err = error_theta_i
 
-
     # Marganilze tcenter
     t0 = epoch_array
     t0_err = epoch_err_array
-    inc=inc_array
-    inc_err=inc_err_array
-    ar=ar_array
-    ar_err=ar_err_array
+    inc = inc_array
+    inc_err = inc_err_array
+    ar = ar_array
+    ar_err = ar_err_array
 
     print('Depth')
     print(depth[a])
@@ -1040,43 +1015,48 @@ INPUTS:
     print('Central time = %f +/- %f' % (mean_t0, error_theta_t0))
     marg_epoch = mean_t0
     marg_epoch_err = error_theta_t0
-    # Marginalize over inclination
+    
+    # Marginalize over inclination, if inclination is fit for.
     if openinc==True:
-        mean_inc=np.sum(w_q*inc)
-        bestfit_theta_inc=inc
-        variance_theta_incq = inc_err*inc_err
+        mean_inc = np.sum(w_q*inc)
+        bestfit_theta_inc = inc
+        variance_theta_incq = inc_err * inc_err
         error_theta_inc = np.sqrt(np.sum(w_q*((bestfit_theta_inc - mean_inc )**2
                                               + variance_theta_incq )))
         print('Inclination = %f +/- %f' % (mean_inc, error_theta_inc))
-        marg_inc=mean_inc
+        marg_inc = mean_inc
         marg_inc_err = error_theta_inc
     else:
-        marg_inc=inc[0]
-        marg_inc_err=0
+        marg_inc = inc[0]
+        marg_inc_err = 0
 
+    # Marginalize over a/rs, if fit for.
     if openar==True:
-        mean_ar=np.sum(w_q*ar)
-        bestfit_theta_ar=ar
-        variance_theta_arq = ar_err*ar_err
+        mean_ar = np.sum(w_q*ar)
+        bestfit_theta_ar = ar
+        variance_theta_arq = ar_err * ar_err
         error_theta_ar = np.sqrt(np.sum(w_q*((bestfit_theta_ar - mean_ar)**2
                                               + variance_theta_arq )))
         print('a/R* = %f +/- %f' % (mean_ar, error_theta_ar))
-        marg_ar=mean_ar
+        marg_ar = mean_ar
         marg_ar_err = error_theta_ar
     else:
-        marg_ar=ar[0]
-        marg_ar_err=0
+        marg_ar = ar[0]
+        marg_ar_err = 0
 
-    marg_c=limb_array[0,:]
-    marg_c_err=np.zeros(4)
-    # if transit==True:
-    #     for i, c in enumerate(limb_array.T):
-    #         mean_c=np.sum(w_q*c)
-    #         var=limb_err_array[:,i]*limb_err_array[:,i]
-    #         error_c=np.sqrt(np.sum(w_q*((c - mean_c)**2 + var )))
-    #         marg_c[i]=mean_c
-    #         marg_c_err[i]=error_c
-
+    # Marginalize over linear LD (no other LD will ever be fit for).
+    marg_c = limb_array[0,:]
+    marg_c_err = np.zeros(4)
+    c0 = limb_array[:, 0]
+    c0_err = limb_err_array[:, 0]
+    # The the first LD coefficient is not fit for, mean_c0 = c0
+    # and error_c0 = 0.
+    mean_c0 = np.sum(w_q*c0)
+    var = c0_err * c0_err
+    error_c0 = np.sqrt(np.sum(w_q*((c0 - mean_c0)**2 + var)))
+    marg_c[0] = mean_c0
+    marg_c_err[0] = error_c0
+    
     
     if plotting == True:
         plt.close()
@@ -1100,22 +1080,14 @@ INPUTS:
         #  plt.plot(sys_lightcurve_x[bestfit,:], np.zeros_like(sys_lightcurve_x[1,:]))
         #  plt.show()
 
-    rms=np.std(sys_residuals[bestfit,:])*1e6
-    ratio=rms/phot_err
+    rms = np.std(sys_residuals[bestfit,:]) * 1e6
+    ratio = rms / phot_err
     print('Rms: %f' % rms)
     print('Photon error: %f' % phot_err)
     print('Ratio: %f' % ratio)
 
-    ####### Auto-correlation of residuals ########
-
+    ####### Plot the auto-correlation function of the residuals ########
     best = a[0]
-    syst = grid[best,:]
-    #syst[11]=0
-    p0 = sys_params[best, :]
-    perr = sys_params_err[best, :]
-    #p0[11] = 22.3
-    #perr[11] = 1.65
-
     ac_resids = autocorr_func_1d(sys_residuals[best,:], norm=True)
     mins = np.zeros_like(ac_resids)
     mins[ac_resids<0] = ac_resids[ac_resids<0]
@@ -1139,6 +1111,7 @@ INPUTS:
 
     ####### EMCEE ###########
     if mcmc == True:
+        start_time = time.time()
         if save_mcmc == True:
             mc_dir = './emcee_runs/marg/' + save_name
             try:
@@ -1152,37 +1125,65 @@ INPUTS:
         else:
             mc_dir = False
 
-        ###### Does this part still work?? Had trouble with error for nonlinear part of slopes
-        perr[18]=.2
-        perr[22]=2
-        ndim, nwalkers = len(p0[syst==0]), int(len(p0[syst==0])*2.5/2)*2
-        pos=np.array([p0[syst==0] + 5*perr[syst==0]*np.random.randn(ndim) for i in range(nwalkers)])
-        #pos[:, sys==1] = p0[sys==1]
-        print(syst)
-        print(p0)
+        # Use outputs from KMPFIT (weighted non-linear least squares) as initial 
+        # starting point and setting priors for MCMC.
+        syst = grid[best,:]
+        p0 = sys_params[best, :]
+        perr = sys_params_err[best, :]
 
+        #openar = True
+        #openinc = True
+        if ld_type=='linear':
+            p0[12] = p_start[6, 0]
+            perr[12] = 0.2
+        if openar==True:
+            syst[11] = 0
+            p0[11] = p_start[3, 0]
+            perr[11] = p_start[3, 1]
+        if fixtime==False:
+            p0[1] = p_start[1, 0]
+            perr[1] = p_start[1, 1]
+        if openinc==True:
+            syst[10] = 0
+            p0[10] = p_start[2, 0]
+            perr[10] = p_start[2, 1]
+                    
+        ndim, nwalkers = len(p0[syst==0]), int(len(p0[syst==0])*2.5/2) * 2
+        positions = np.array([p0[syst==0] + perr[syst==0]*np.random.randn(ndim)/10
+                              for i in range(nwalkers)])
+
+        outside_prior_flags = np.zeros(nwalkers)
+        p0_hold = p0.copy()
+        for i, pos in enumerate(positions):
+            p0_hold[syst==0] = pos
+            lp = lnprior(p0_hold, p0, perr, syst)
+            if not np.isfinite(lp):
+                outside_prior_flags[i] = 1
+        if np.sum(outside_prior_flags) > 0:
+            raise ValueError('Starting position of at least one walker' \
+                             'is outside prior limits. Investigate starting positions.')
         sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob
                                         , args=(x, y, err, p0, perr, syst
-                                                , sh, HSTphase,dir_array, transit))
+                                                , sh, HSTphase, dir_array, transit
+                                                , ld_type, one_slope))
 
         nsteps = 10000
-        for i, result in enumerate(sampler.sample(pos, iterations=nsteps)):
+        for i, result in enumerate(sampler.sample(positions, iterations=nsteps)):
             if (i+1) % 100 == 0:
                 print("{0:5.1%}".format(float(i) / nsteps))
 
         #ac.autocorr_func_1d(samples.chain[:,:,0], norm=True)
-        print("Time elapsed in minutes %.2f" % ((time.time()-start_time)/60))
+        print("Time elapsed in minutes %.2f" % ((time.time() - start_time)/60))
         plt.clf()
         plt.close()
-        burn = 4000
+        burn = 3000
         for pp in range(len(p0[syst==0])):
-            print(lab[syst==0][pp])
             chain = sampler.chain[:,burn:,pp]
             N = np.exp(np.linspace(np.log(100), np.log(chain.shape[1]), 10)).astype(int)
             new = np.empty(len(N))
             for i, n in enumerate(N):
                 new[i] = autocorr_new(chain[:, :n])
-            plt.loglog(N, new, "o-", label=lab[pp])
+            plt.loglog(N, new, "o-", label=lab[syst==0][pp])
         plt.plot(N, N/50., 'go', label='N/50')
         plt.xlabel('Chain Length')
         plt.ylabel('Autocorrelation time estimate')
@@ -1223,8 +1224,8 @@ INPUTS:
             phase = (x-pp[1])/Per
             phase -= np.floor(phase)
             phase[phase > 0.5] = phase[phase > 0.5] -1.0
-            syste=get_sys_model(pp, x, sh, HSTphase, dir_array)
-            mod = lightcurve(pp, x, sh, HSTphase, dir_array, transit=transit)
+            syste=get_sys_model(pp, x, sh, HSTphase, dir_array, one_slope=one_slope)
+            mod = lightcurve(pp, x, sh, HSTphase, dir_array, transit=transit, ld_type=ld_type)
             plt.plot(x, mod, '.k', ls='', alpha=.1)
         #plt.ylim([.9,1.1])
         plt.errorbar(x, y, err, marker='o', color='b', ecolor='b', ls='')
@@ -1251,6 +1252,28 @@ INPUTS:
         else:
             plt.show()
 
+        plt.clf()
+        plt.close('all')
+        # Index to indicate relevant astrophysical parameters.
+        physical_labels = ['Depth', 'Epoch', 'ars', 'i', 'c1']
+        new_labels = lab[syst==0]
+        ix = np.where(np.isin(new_labels, physical_labels))[0]
+        epoch_ix = np.where(np.isin(lab, 'Epoch'))[0]
+        if len(epoch_ix)==1:
+            samples[:, epoch_ix] = ((samples[:, epoch_ix]
+                                     - np.percentile(samples[:, epoch_ix], 50))
+                                    * 24 * 60 * 60)
+        fig = corner.corner(samples[:, ix], labels=new_labels[ix]
+                            , quantiles=[.16,.5,.84], show_titles=True)
+        if save_mcmc == True:
+            plt.savefig(mc_dir+'/marg_corner_astrophysical.pdf')
+            plt.close()
+            plt.clf()
+        else:
+            plt.show()
+
+        plt.clf()
+        plt.close('all')
         accept=sampler.acceptance_fraction
         print('accept rate: ', accept)
         #time1 = sampler.acor
@@ -1273,6 +1296,8 @@ INPUTS:
         mc_results['Marg inflation'] = ratio
         if save_mcmc == True:
             mc_results.to_csv(mc_dir+'/best_params.csv')
+        else:
+            print(mc_results)
 
     if save_model_info == True:
 
@@ -1296,6 +1321,8 @@ INPUTS:
                                   , sys_params.T, sys_params_err.T, sys_evidence.T
                                    , sys_model.T,sys_model_x.T)), columns=cols, index=ind)
         wl['Transit']=transit
+        wl['Single slope?']=one_slope
+        wl['Limb-darkening type']=ld_type
 
 
         ind2a=pd.MultiIndex.from_product([[save_name],['data']*nexposure])
