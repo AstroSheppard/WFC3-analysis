@@ -1,4 +1,3 @@
-#from __future__ import print_function
 import glob
 import sys
 
@@ -83,6 +82,7 @@ def ap(frame):
     ymin = np.min(index)
     ymax = np.max(index)
     yapt = (ymax - ymin) // 2
+
 
     x=np.asarray([xapt,xmin,xmax])
     y=np.asarray([yapt,ymin,ymax])
@@ -169,13 +169,13 @@ def pixel_zapping(allspec, plot=False):
     #print 'Bad pixels found =',np.sum(index)
     return allspec
 
-def zapped(allspec):
+def zapped(allspec, sigma1=8, sigma2=5):
         """Input is 3D numpy array of all bkg-removed exposure.
         Median values and sigma cuts are used to remove cosmic rays"""
         #dims=np.empty_like(allspec)
         #aspec=allspec.copy()
         nspec, nspat, nwave = allspec.shape
-        nloop = [8, 5]
+        nloop = [sigma1, sigma2]
         for sig in nloop:
             nzap = 0
             # Get row means, exluding top and bottom 15 to ignore CRs
@@ -190,15 +190,15 @@ def zapped(allspec):
             temp=allspec.copy()
             x=np.asarray(list(range(nspec)))
             for i in range(nspat):
-                y=temp[:,i,:].sum(axis=1)
-                y/=np.median(y)
-                m, b=np.polyfit(x, y, 1)
-                shift=m*x+b
-                shift=np.tile(shift, (temp.shape[2],1)).T
+                y = temp[:,i,:].sum(axis=1)
+                y /= np.median(y)
+                m, b = np.polyfit(x, y, 1)
+                shift = m*x + b
+                shift = np.tile(shift, (temp.shape[2], 1)).T
                 np.place(shift, shift==0, 1)
-                temp[:,i,:]=temp[:,i,:]/shift
+                temp[:,i,:] = temp[:,i,:]/shift
 
-            # correct for uneven scan rate before cr check
+            # Correct for uneven scan rate before cosmic ray check.
             row_anom=np.moveaxis(np.tile(rows.anom(axis=0), (nwave,1,1)), 0, 2)
             #row_anom2=np.moveaxis(np.tile(rows2.anom(axis=0), (nwave,1,1)), 0, 2)
 

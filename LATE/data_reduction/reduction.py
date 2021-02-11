@@ -1,5 +1,6 @@
 import sys
 import glob
+import configparser
 
 import numpy as np
 from astropy.io import fits
@@ -81,11 +82,12 @@ def flatfield(visit, direction, wave=[0]):
     FF[FF==0] = 1
     return [all_img/FF, headers, all_err/FF, all_raw, FF]
 
-def dq(visit, direction, data):
+def dq(visit, direction, data, scan_adjustment=0):
     x1,x2,y1,y2=pd.read_csv('coords.csv'
                             , index_col=0).loc[visit,'Initial Aperture'].values
 
-    ima, raw=get_data(visit, direction=direction)
+    ima, raw=get_data(visit, direction=direction
+                      , scan_adjustment=scan_adjustment)
     dq_array=np.zeros(data.shape)
     for i, item in enumerate(ima):
         obs=fits.open(item)
@@ -108,40 +110,52 @@ def dq(visit, direction, data):
 
 
 if __name__=='__main__':
-    if len(sys.argv) < 4 or len(sys.argv) > 6:
-        sys.exit('Run using [program.py] [planet] [visit #] [scan direction] [transit?] [plot?]')
-    visit=sys.argv[1]+'/'+sys.argv[2]
-    direction=sys.argv[3]
-    if len(sys.argv) == 6:
-        plotting=int(sys.argv[5])
-        transit=int(sys.argv[4])
-    elif len(sys.argv) == 5:
-        plotting=False
-        transit=int(sys.argv[4])
-    else:
-        plotting=False
-        transit=False
 
+    config = configparser.ConfigParser()
+    config.read('config.py')
+    planet = config.get('DATA', 'planet')
+    visit_number = config.get('DATA', 'visit_number')
+    direction = config.get('DATA', 'scan_direction')
+    transit = config.getboolean('DATA', 'transit')
+    plotting = config.getboolean('DATA', 'data_plots')
+    scan_adjustment = config.getfloat('DATA', 'scan_adjustment')
+    sigma1 = config.getint('COSMIC_RAY', 'first_sigma_cut')
+    sigma2 = config.getint('COSMIC_RAY', 'second_sigma_cut')
+
+    if len(sys.argv) != 1:
+        sys.exit('Set inputs using config.py file.')
+    visit = planet + '/' + visit_number
+    
     wave=wave_solution.wave_solution(visit, direction, 'bkg', plotting=plotting
                                      , savename=False, transit=transit)
-    print('wave done')
-    data, headers, errors, raw, ff=flatfield(visit, direction, wave=wave)
-    #img = data[0,:,:]
-    #plt.imshow(img)
-    #plt.show()
-    print('flats done')
-    mask=dq(visit, direction, data)
+    print('Initial wavelength solution has finished.')
+    data, headers, errors, raw, ff= flatfield(visit, direction, wave=wave)
+    print('Second order flatfield corrections have finished.')
+    
+    # Uncomment to view image after flatfield correction
+    # img = data[0,:,:]
+    # plt.imshow(img)
+    # plt.show()
+    
+
+    mask=dq(visit, direction, data, scan_adjustment=scan_adjustment)
     mask=np.broadcast_to(mask, data.shape)
     data=np.ma.array(data, mask=mask)
-    #img = data[0,:,:]
-    #plt.imshow(img)
-    #plt.show()
 
-    cr_data=fullzap.zapped(data)
-    #cr_data = data
-    #img = data[0,:,:]
-    #plt.imshow(img)
-    #plt.show()
-    print('cr done')
-    filename = './reduced/'+ visit + '/'+direction+'/final/'
+    # Uncomment to view image after masking bad quality pixels.
+    # img = data[0,:,:]
+    # plt.imshow(img)
+    # plt.show()
+
+    cr_data=fullzap.zapped(data, sigma1=sigma1, sigma2=sigma2)
+    print('Data quality masking and cosmic ray corrections have finished.')
+
+    # Uncomment to view exposure after correcting for inferred cosmic rays.
+    
+    # cr_data = data
+    # img = data[0,:,:]
+    # plt.imshow(img)
+    # plt.show()
+
+    filename = './reduced/' + visit + '/' + direction + '/final/'
     fullzap.bad_pixels(cr_data, headers, errors, raw, filename)

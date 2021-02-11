@@ -2,6 +2,7 @@ import glob
 import sys
 import os
 import shutil
+import configparser
 
 import numpy as np
 import matplotlib
@@ -60,7 +61,7 @@ def test(img, window, final_img,get_window=True):
         fits.writeto('./test_zapping/raw.fits', final_img, overwrite=True)
         sys.exit('Compare background-subtracted image with input image (raw.fits)')
 
-def get_data(visit, direction=None):
+def get_data(visit, direction=None, scan_adjustment=0):
         """ Extract only quality, spectroscopic fits files """
         # Read in data and decare arrays
         ima=np.sort(np.asarray(glob.glob('../planets/'+visit+'/*ima.fits')))
@@ -78,7 +79,7 @@ def get_data(visit, direction=None):
         for i,img in tqdm(enumerate(ima)):
                 fit=fits.open(img)
                 header=fit[0].header
-                dire=header['POSTARG2'] + 5.0
+                dire=header['POSTARG2'] + scan_adjustment
                 if direction == 'forward':
                     if dire > 0:
                         obstype[i]=header['OBSTYPE']
@@ -193,6 +194,8 @@ def bkg(raw, size_window, test=False, get_window=False):
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
                                 print("Click the top-left then the bottom-right corners, then close window")
                                 plt.show()
+                                plt.close('all')
+                               
                                 bkgc= [int(i) for item in bkg_coords for i in item]
                                 x1=bkgc[1]
                                 x2=bkgc[3]
@@ -205,6 +208,8 @@ def bkg(raw, size_window, test=False, get_window=False):
                                 cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg2)
                                 print("Click the top-left then the bottom-right corners, then close window")
                                 plt.show()
+                                plt.close('all')
+                               
                                 bkgc= [int(i) for item in bkg_coords2 for i in item]
                                 x1=bkgc[1]
                                 x2=bkgc[3]
@@ -262,6 +267,8 @@ def bkg(raw, size_window, test=False, get_window=False):
                             cid = fig.canvas.mpl_connect('button_press_event', onclick_bkg)
                             print("Click the top-left then the bottom-right corners, then close window")
                             plt.show()
+                            plt.close('all')
+                         
                             bkgc= [int(i) for item in bkg_coords for i in item]
                             x1=bkgc[1]
                             x2=bkgc[3]
@@ -311,10 +318,17 @@ def bkg(raw, size_window, test=False, get_window=False):
             return [output, err]
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        sys.exit('Please use python [bkg.py] [planet] [visit]')
-    visit=sys.argv[1]+'/'+sys.argv[2]
-    ima, raw=get_data(visit)
+
+    if len(sys.argv) != 1:
+        sys.exit('Set input values using config.py file.')
+    config = configparser.ConfigParser()
+    config.read('config.py')
+    planet = config.get('DATA', 'planet')
+    visit_number = config.get('DATA', 'visit_number')
+    scan_adjustment = config.getfloat('DATA', 'scan_adjustment')
+    test_bkg = config.getboolean('DATA', 'test_bkg')
+    visit = planet + '/' + visit_number
+    ima, raw=get_data(visit, scan_adjustment=scan_adjustment)
     n_forward, n_reverse=0,0
     direction=np.zeros(len(ima))
 
@@ -322,7 +336,7 @@ if __name__ == '__main__':
     for i,img in tqdm(enumerate(ima), desc='Getting data'):
         exp=fits.open(img)
         header=exp[0].header
-        dire=header['POSTARG2'] + 5.0
+        dire=header['POSTARG2'] + scan_adjustment
         direction[i]=dire
         if dire > 0:
             n_forward+=1
@@ -336,11 +350,11 @@ if __name__ == '__main__':
             exp.close()
     # Center the source
     if n_forward == 0:
-        img=reverse_img
+        img = reverse_img
     else:
-        img=forward_img
-    fig=plt.figure()
-    ax=plt.imshow(img)
+        img = forward_img
+    fig = plt.figure()
+    ax = plt.imshow(img)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     print("Click the top-left then the bottom-right corners")
@@ -433,15 +447,15 @@ if __name__ == '__main__':
     # Subtract background
     # Apply window to center source
     # Save image to all images, save header to all headers
-    f=0
-    r=0
-    fwindow=[1,1,1,1]
-    rwindow=[1,1,1,1]
-    if len(sys.argv)==5: test(ima[2], rwindow, reverse_img)
-    for i,expo in tqdm(enumerate(ima), desc='Subtracting background'):
-        obs=fits.open(expo)
-        hdr=obs[0].header#.tostring(sep='\\n')
-        image=obs[1].data
+    f = 0
+    r = 0
+    fwindow = [1, 1, 1, 1]
+    rwindow = [1, 1, 1, 1]
+    if test_bkg==True: test(ima[2], rwindow, reverse_img)
+    for i, expo in tqdm(enumerate(ima), desc='Subtracting background'):
+        obs = fits.open(expo)
+        hdr = obs[0].header#.tostring(sep='\\n')
+        image = obs[1].data
         if obs[1].header['BUNIT'] == 'ELECTRONS':
             hdr['Count']=np.mean(image)/hdr['EXPTIME']
         else:
@@ -514,15 +528,3 @@ if __name__ == '__main__':
         coords.to_csv('./coords.csv')
 
     print('Finished removing background ' + visit + ' visit')
-
-    # Write reduced data to a directory
-    # for k in range(n_forward):
-    #     filename = fzdir + "%03d"%i + 'f.fits'
-    #     image = allimages_f[k,:,:]
-    #     hdr=fits.Header.fromstring(allheader_f[k], sep='\\n')
-    #     fits.writeto(filename, image, header=hdr, overwrite=True)
-    # for k in range(n_reverse):
-    #     filename = rzdir + "%03d"%k + 'r.fits'
-    #     image = allimages_r[k,:,:]
-    #     hdr=fits.Header.fromstring(allheader_r[k], sep='\\n')
-    #     fits.writeto(filename, image, header=hdr)

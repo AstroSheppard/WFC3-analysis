@@ -1,7 +1,7 @@
-
+import configparser
 import sys
-
 import glob
+
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -145,8 +145,13 @@ def plot_time_series(visit
 
 if __name__=='__main__':
 
-    if len(sys.argv) != 4:
-        sys.exit('Format: preprocess_whitelight.py [planet] [visit] [direction]')
-    visit=sys.argv[1]+'/'+sys.argv[2]
-    direction=sys.argv[3]
+    config = configparser.ConfigParser()
+    config.read('config.py')
+    planet = config.get('DATA', 'planet')
+    visit_number = config.get('DATA', 'visit_number')
+    direction = config.get('DATA', 'scan_direction')
+    if len(sys.argv) != 1:
+        sys.exit('Set inputs using config.py file.')
+        
+    visit = planet + '/' + visit_number
     plot_time_series(visit, direction)
