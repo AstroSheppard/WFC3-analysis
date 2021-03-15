@@ -53,7 +53,7 @@ def ap(frame):
     # highest flux rows to avoid oddities from
     # cosmic rays
     norm = np.median(np.sort(f)[-5:])
-    per=0.02
+    per=0.03
     #for per in perc:
         # Get all rows with flux > 2% of norm flux --- this can be adjustable
     index = np.where(f > per*norm)[0]
@@ -66,12 +66,13 @@ def ap(frame):
     xapt = (xmax - xmin) // 2
 
     f=np.mean(frame,axis=0)
+
     #f1=np.argmax(f)
     # Define max value as the median of the top 5
     # highest flux rows to avoid oddities from
     # cosmic rays
     norm = np.median(np.sort(f)[-5:])
-    per=0.05
+    per=0.03
     #for per in perc:
         # Get all rows with flux > 2% of norm flux --- this can be adjustable
     index = np.where(f > per*norm)[0]
@@ -82,7 +83,7 @@ def ap(frame):
     ymin = np.min(index)
     ymax = np.max(index)
     yapt = (ymax - ymin) // 2
-
+    # Make sure reverse and forward apertures match!
 
     x=np.asarray([xapt,xmin,xmax])
     y=np.asarray([yapt,ymin,ymax])
