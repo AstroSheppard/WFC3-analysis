@@ -190,10 +190,12 @@ def preprocess_whitelight(visit
                           , check=True
                           , ignore_first_exposures=False
                           , inp_file=False
+                          , ld_source='claret2011.csv'
                           , save_processed_data=False
                           , transit=False
                           , data_plots=True
                           , mcmc=False
+                          , include_error_inflation=True
                           , openinc=False
                           , openar=True
                           , fixtime=False
@@ -385,48 +387,41 @@ def preprocess_whitelight(visit
 
 
     # Put in correct time order
-    date_order=np.argsort(alldate)
-    dir_array = dir_array[date_order]
-    dir_save = dir_array
-    alldate=alldate[date_order]
-    allspec1d=allspec1d[date_order,:]
-    allerr1d=allerr1d[date_order,:]
+    date_order = np.argsort(alldate)
+    dir_save = dir_array[date_order].copy()
+    date_sav = alldate[date_order].copy()
+    spec1d_sav = allspec1d[date_order,:].copy()
+    err1d_sav = allerr1d[date_order,:].copy()
+    light_mask = np.ones(len(dir_array), dtype=bool)
 
-    #ix = np.arange(len(dir_array))
-    #ix = ix[17:]
-    #ix=np.delete(ix, [0,5, 19,38,57])
-
-    #dir_array = dir_array[ix]
-    #alldate=alldate[ix]
-    #allspec1d=allspec1d[ix, :]
-    #allerr1d=allerr1d[ix, :]
-    #0, 19, 38, 57
     # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
     if ignore_first_exposures == True:
-        orbit = get_orbits(alldate)
+        orbit = get_orbits(date_sav)
         firsts = orbit[:-1]
-        laters = orbit[1]+np.arange(2)
+        # Ignore the first 3 points of the first orbit to
+        # account for slower ramp. 
+        laters = orbit[1]+np.arange(3)
+        # laters = firsts+2
         firsts = np.append(firsts, firsts+1)
         firsts = np.append(firsts, laters)
-        last_exp = orbit[-1]
-        all_indeces = np.arange(last_exp)
-        index = np.delete(all_indeces, firsts)
-        dir_array = dir_array[index]
-        alldate = alldate[index]
-        allspec1d = allspec1d[index]
-        allerr1d = allerr1d[index]
+        light_mask[firsts] = False
+        
+    dir_array = dir_save[light_mask]
+    alldate = date_sav[light_mask]
+    allspec1d = spec1d_sav[light_mask]
+    allerr1d = err1d_sav[light_mask]
     orbit = get_orbits(alldate)
     planet = visit[:-8]
     props, errs = inputs('../planets/%s/inputs.dat' % planet, transit)
     if ld_type=='nonlinear':
-        a1 = gl.get_limb(planet,14000.,'a1')
-        a2 = gl.get_limb(planet,14000.,'a2')
-        a3 = gl.get_limb(planet,14000.,'a3')
-        a4 = gl.get_limb(planet,14000.,'a4')
+        a1 = gl.get_limb(planet,14000.,'a1', source=ld_source)
+        a2 = gl.get_limb(planet,14000.,'a2', source=ld_source)
+        a3 = gl.get_limb(planet,14000.,'a3', source=ld_source)
+        a4 = gl.get_limb(planet,14000.,'a4', source=ld_source)
     elif ld_type=='linear':
-        a1 = gl.get_limb(planet,14000., 'u')
+        a1 = gl.get_limb(planet,14000., 'u', source=ld_source)
         a2 = 0
         a3 = 0
         a4 = 0
@@ -595,6 +590,13 @@ def preprocess_whitelight(visit
     #                          transit=transit, savewl=visit)
     print(props)
     save_name = visit + '/' + direction
+    data_save_name = save_name
+    if include_error_inflation == False:
+        save_name = save_name + '_no_inflation'
+    if ld_type == 'linear':
+        save_name = save_name + '_linearLD'
+    if ignore_first_exposures == True:
+        save_name = save_name + '_no_first_exps'
     results=wl.whitelight2020(props
                               , date
                               , spec1d.data
@@ -602,6 +604,7 @@ def preprocess_whitelight(visit
                               , dir_array
                               , plotting=fit_plots
                               , mcmc=mcmc
+                              , include_error_inflation=include_error_inflation
                               , norandomt=norandomt
                               , openinc=openinc
                               , openar=openar
@@ -619,32 +622,34 @@ def preprocess_whitelight(visit
 
     #direction = 'forward'
     if save_processed_data == True:
-        sh=wl.get_shift(allspec1d)
-        cols=['Pixel %03d' % i for i in range(allspec1d.shape[1])]
-        subindex=['Value']*allspec1d.shape[0] + ['Error']*allspec1d.shape[0]
-        ind=pd.MultiIndex.from_product([[save_name], subindex])
-        processed_data=pd.DataFrame(np.vstack((allspec1d,allerr1d)),columns=cols, index=ind)
-        processed_data['Date']=np.append(alldate,alldate)
-        processed_data['sh']=np.append(sh,sh)
-        processed_data['Transit']=transit
+        sh=wl.get_shift(spec1d_sav)
+        cols=['Pixel %03d' % i for i in range(spec1d_sav.shape[1])]
+        subindex = ['Value']*spec1d_sav.shape[0] + ['Error']*spec1d_sav.shape[0]
+        ind = pd.MultiIndex.from_product([[data_save_name], subindex])
+        processed_data = pd.DataFrame(np.vstack((spec1d_sav, err1d_sav))
+                                      , columns=cols, index=ind)
+        processed_data['Date'] = np.append(date_sav, date_sav)
+        processed_data['sh'] = np.append(sh, sh)
+        processed_data['Mask'] = np.append(light_mask, light_mask)
+        processed_data['Transit'] = transit
         processed_data['Scan Direction'] = np.append(dir_save, dir_save)
-        #sys_p=pd.DataFrame(np.vstack((props_hold, errs)).T, columns=['Properties'
-        #                                                         , 'Errors'])
         sys_p=pd.DataFrame(props_hold, columns=['Properties'
                                                 , 'Errors'])
-        sys_p['Visit']=save_name
+        sys_p['Label'] = ['Rp/Rs', 'T0', 'i', 'a/rs', 'period'
+                          , 'Depth', 'c1', 'c2', 'c3', 'c4']
+        sys_p['Visit']=data_save_name
         sys_p=sys_p.set_index('Visit')
 
         try:
             cur=pd.read_csv('./data_outputs/processed_data.csv', index_col=[0,1])
-            cur=cur.drop(save_name, level=0, errors='ignore')
+            cur=cur.drop(data_save_name, level=0, errors='ignore')
             cur=pd.concat((cur,processed_data), sort=False)
             cur.to_csv('./data_outputs/processed_data.csv', index_label=['Obs', 'Type'])
         except IOError:
             processed_data.to_csv('./data_outputs/processed_data.csv', index_label=['Obs','Type'])
         try:
             curr=pd.read_csv('./data_outputs/system_params.csv', index_col=0)
-            curr=curr.drop(save_name, errors='ignore')
+            curr=curr.drop(data_save_name, errors='ignore')
             curr=pd.concat((curr,sys_p), sort=False)
             curr.to_csv('./data_outputs/system_params.csv')
         except IOError:
@@ -677,10 +682,12 @@ if __name__=='__main__':
     data_plots = config.getboolean('DATA', 'data_plots')
 
     mcmc = config.getboolean('MODEL', 'mcmc')
+    include_error_inflation = config.getboolean('MODEL', 'include_error_inflation')
     openar = config.getboolean('MODEL', 'openar')
     openinc = config.getboolean('MODEL', 'openinc')
     fixtime = config.getboolean('MODEL', 'fixtime')
     ld_type = config.get('MODEL', 'limb_type')
+    ld_source = config.get('MODEL', 'limb_source')
     norandomt = config.getboolean('MODEL', 'norandomt')
     linear_slope = config.getboolean('MODEL', 'linear_slope')
     quad_slope = config.getboolean('MODEL', 'quad_slope')
@@ -703,7 +710,9 @@ if __name__=='__main__':
                                                 , transit=transit
                                                 , check=check
                                                 , ignore_first_exposures=ignore_first_exposures
+                                                , include_error_inflation=include_error_inflation
                                                 , inp_file=inp_file
+                                                , ld_source=ld_source
                                                 , data_plots=data_plots
                                                 , save_processed_data=save_processed_data
                                                 , save_model_info=save_model_info
@@ -729,14 +738,15 @@ if __name__=='__main__':
     print("Marg a/R*: %f +/- %f" % (best_results[6], best_results[7]))
     print("Marg limb darkening params: ", best_results[8], "+/-", best_results[9])
 
-    inp=pd.DataFrame(inputs, columns=['User Inputs'])
-    inp['Visit']=visit+'/'+direction
-    inp['Transit']=transit
-    inp=inp.set_index('Visit')
+    save_name = visit + '/' + direction
+    inp = pd.DataFrame(inputs, columns=['User Inputs'])
+    inp['Visit'] = save_name
+    inp['Transit'] = transit
+    inp = inp.set_index('Visit')
     try:
-        cur=pd.read_csv('./data_outputs/preprocess_info.csv', index_col=0)
-        cur=cur.drop(visit+'/'+direction, errors='ignore')
-        cur=pd.concat((cur,inp), sort=False)
+        cur = pd.read_csv('./data_outputs/preprocess_info.csv', index_col=0)
+        cur = cur.drop(visit+'/'+direction, errors='ignore')
+        cur = pd.concat((cur,inp), sort=False)
         cur.to_csv('./data_outputs/preprocess_info.csv')
     except IOError:
         inp.to_csv('./data_outputs/preprocess_info.csv')
