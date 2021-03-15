@@ -1,6 +1,6 @@
 [DATA]
-planet = l9859b
-visit_number = visit02
+planet = l9859c
+visit_number = visit00
 scan_direction = reverse
 transit = yes
 data_plots = yes
