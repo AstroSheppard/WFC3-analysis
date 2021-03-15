@@ -1,15 +1,20 @@
 [DATA]
-planet = l9859b
-visit_number = visit02
+planet = l9859c
+visit_number = visit00
 scan_direction = both
 transit = yes
-check = yes
 ignore_first_exposures = yes
+# Only set inp_file to on if using pre-selected inputs.
+# As a default, use "check" instead, which allows user to
+# select orbits to include in analysis.
+check = yes
 inp_file = no
-data_plots = yes
+data_plots = no
+wave_solution_plots = yes
 
 [MODEL]
-mcmc = yes
+mcmc = no
+include_error_inflation = yes
 openinc = no
 openar = no
 fixtime = no
@@ -24,12 +29,14 @@ one_slope = yes
 # each systematic model. Program is much faster when set to
 # no.
 fit_plots = no
+# Determine what source to use for limb darkening coefficients.
+limb_source = claret2012.csv
 # Only linear and nonlinear currently work.
 limb_type = nonlinear
 
 [SAVE]
 # Necessary for spectral fits
-save_processed_data = no
+save_processed_data = yes
 # Necessary for wlresids.py
-save_model_info = no
-save_mcmc = no
+save_model_info = yes
+save_mcmc = yes
