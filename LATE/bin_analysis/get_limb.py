@@ -5,14 +5,15 @@ import sys
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-def get_limb(planet, x, limb_coeff, filt1='J', filt2='H', load=False):
+def get_limb(planet, x, limb_coeff, source='claret2011.csv'
+             , filt1='J', filt2='H', load=False):
     #lds=pd.read_table('asu-1.tsv')
     if load==True:
         lds=pd.read_csv('../planets/'+planet+'/lds.csv')
         return lds[limb_coeff].values
     else:
         #lds=pd.read_table('../planets/'+planet+'/3d.tsv')
-        lds=pd.read_csv('../planets/'+planet+'/claret2011.csv')
+        lds=pd.read_csv('../planets/' + planet + '/' + source)
         #lds=pd.read_csv('../planets/'+planet+'/claret2012.csv')
 
         lds['Filt']=lds['Band'].str.strip()

@@ -16,11 +16,11 @@ import pickle
 
 # Local stuff
 #import whitelight2018 as wl
-from ..wl_preprocess import marg_mcmc as wl
-from ..marg_mcmc.wl_preprocess import next_pow_two, auto_window, autocorr_func_1d, autocorr_new
-from ..wl_preprocess.wave_solution import orbits
+sys.path.insert(0, '../wl_preprocess')
 from kapteyn import kmpfit
-
+import marg_mcmc as wl
+from wave_solution import orbits
+from marg_mcmc import next_pow_two, auto_window, autocorr_func_1d, autocorr_new
 
 
 def lightcurve(p, x, sh, HSTphase, dir_array, wlmodel, err, wlerror
@@ -81,13 +81,12 @@ def marg(p_start
          , img_date
          , bin_spectra
          , binerr
-         , norm1
-         , norm2
          , visit
          , binsize
          , beta
          , wlerror
          , dir_array
+         , HSTphase
          , sh = 0
          , first = 0
          , include_residuals = True
@@ -110,6 +109,8 @@ def marg(p_start
     # for now, but might be unnecessary in future.
     #resids_df = resids_df.fillna(0)
     resids_df = resids_df.dropna(axis=1)
+    print('Check resids_df. Dropna might not work if the unused models are given 0 and not left blank')
+    breakpoint()
 
     ### Get numeric columns (only needed to do once, when columns were out of order)
     #cols = [int(x[-2:]) for x in resids_df.columns]
@@ -240,7 +241,7 @@ def marg(p_start
     run1_params = np.zeros((nsys,nParam))
 
     x = img_date
-    y=bin_spectra.sum(axis=1)
+    y = bin_spectra.sum(axis=1)
     #y[1::2] = np.median(y[::2])/np.median(y[1::2])*y[1::2]
     err = np.sqrt(np.ma.sum(binerr*binerr, axis=1))
     #phot_err=1e6/np.median(np.sqrt(y))
@@ -253,23 +254,15 @@ def marg(p_start
 
     rawerr=err.copy()
     rawflux=y.copy()
-    # Normalize the data to be near 1.0. The parameters fnorm and rnorm will fine-tune this in the fit.
+    # Normalize the data to be near 1.0. The parameters
+    # fnorm and rnorm will fine-tune this in the fit.
 
-    err = err/norm
-    y = y/norm
+    err = err / norm
+    y = y / norm
 
-
-    # Calculate HST phase
-    HSTper = 96.36 / (24.*60.)
-    # Get phase using same 0 point as the whitelight curve
-    HSTphase = (img_date-img_date[first])/HSTper
-    HSTphase = HSTphase - np.floor(HSTphase)
-    # Change back to .5. Only necessary to avoid weird behavior with first orbit for l9859c
-    HSTphase[HSTphase > 0.5] = HSTphase[HSTphase > 0.5] -1.0
-
-    phase = (x-epoch)/Per
+    phase = (x-epoch) / Per
     phase = phase - np.floor(phase)
-    phase[phase > 0.5] = phase[phase > 0.5] -1.0
+    phase[phase > 0.5] = phase[phase > 0.5] - 1.0
 
     for s, systematics in tqdm(enumerate(grid), desc='First MPFIT run'):
         # Ensure that the center of transit/eclipse time is fixed for these spectral fits.
@@ -335,7 +328,7 @@ def marg(p_start
     std=resid_stddev[top]
     model_err=np.sqrt(run1_params[top,-1]**2*wlerror**2+err**2)
     #model_err = err
-    if np.median(model_err) < std and include_error_inflation == True:
+    if np.median(model_err) < std and include_error_inflation==True:
         #sys.exit('something is being scaled')
         #scale = std / np.median(model_err)
         scale = np.sqrt(np.median((std*std - wlerror*wlerror*run1_params[top,-1]*run1_params[top,-1])/err/err))
