@@ -8,12 +8,6 @@ pyenv install 3.XX
 pyenv global 3.XX
 pyenv version
 
-To start virtual environment:
-% cd to desired directory)
-virtualenv venv
-source venv/bin/activate
-% deactivate to leave venv
-
 To Set up Virtual Environment (only first time):
 source venv/bin/activate
 pip install -r pre_requirements.txt
@@ -25,14 +19,28 @@ Go to GitHub repository, click green “Code” button, copy HTTPS link
 Type “git clone XX”, where XX is the link
 Put in GitHub username/pw if necessary
 
+To Get Started on Work:
+1. Move to desired directory
+cd ~/Documents/Science_Projects/AstroSheppard/WFC3-analysis/LATE
+2. Pull down current version from git
+% git pull
+
+To start virtual environment:
+% cd to desired directory)
+virtualenv venv
+source venv/bin/activate
+% deactivate to leave venv
+
 How to Merge to Github:
-git pull:  pulls down current version from git - DO THIS FIRST
+git status: shows what hasn't been committed or untracked
+git diff: what's different from git version
 git add/rm filename:  add/remove files on git
 git add -A: stages all changes
 git add . : stages new files and modifications, without deletions
 git add -u : stages modifications and deletions, without new files
 git commit -m YY, where YY is the note about what changed: This tells local git that you’ve made changes
 git push:  pushes your version to repository
+
 
 To Download Data:
 cd to “planets” directory
@@ -50,16 +58,14 @@ binary cr
 mget *.fits
 Copy files from proper directory in “Data” Directory (star & planet specific)
 
-*Procedure for data analysis is in README.md in data_reduction
+
+Analysis Steps:
+1. Data Reduction:  Procedure for data analysis is in README.md in data_reduction
+2. Wl_preprocess:  Procedure is in README.md
+3. Bin_analysis
 
 Tips:
-- %debug: puts you in debut mode, where you can print out variables by typing their names.  Type “q” to exit.
+- %debug: puts you in debug mode, where you can print out variables by typing their names.  Type “q” to exit.
 
-from astropy.io import fits
-import matplotlib.pyplot as plt
-with fits.open('000.fits') as exp:
-test = exp[0].data
-plt.imshow(test)
-plt.show()
 
 
