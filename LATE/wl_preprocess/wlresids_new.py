@@ -11,37 +11,62 @@ import marg_mcmc as wl
 from wave_solution import orbits
 
 def wlresids(visit
-             , include_error_inflation=True
              , transit=True
+             , include_error_inflation=True
              , ld_type='nonlinear'
+             , ignore_first_exposures=False
+             , openar = False
              , one_slope=True):
 
     data_index = visit
     if include_error_inflation == False:
         # Inflated or not, whitelight data and preprocess info are the same.
         visit = visit + '_no_inflation'
+    if ld_type == 'linear':
+        visit = visit + '_linearLD'
+    if ignore_first_exposures == True:
+        visit = visit + '_no_first_exps'
+    if openar == True:
+        visit = visit + '_openar'
 
     data_dir = './data_outputs/'
-    pre = pd.read_csv(data_dir+'preprocess_info.csv', index_col=0).loc[data_index]
-    white = pd.read_csv(data_dir+'wl_data.csv', index_col=[0,1]).loc[data_index]
+    pre = pd.read_csv(data_dir+'preprocess_info.csv', index_col=[0,1]).loc[(data_index, ignore_first_exposures)]
+    #pre = pre.loc[pre.['Ignore first exposures'].values[0] == ignore_first_exposures]
+    white = pd.read_csv(data_dir+'wl_data.csv', index_col=[0,1]).loc[visit] # previously data_index 3/22
 
     first = pre['User Inputs'].values[-2].astype(int)
     last = pre['User Inputs'].values[-1].astype(int)
     norm = white.loc['Flux Norm Value', 'Values']
+    HSTmidpoint = white.loc['HST midpoint', 'Values'].astype(int)
 
     # READ IN ALL PROCESSED DATA
     proc = data_dir + 'processed_data.csv'
     df = pd.read_csv(proc, index_col=[0,1]).loc[data_index]
     transit = df['Transit'].values[0]
-    spec = df.loc['Value'].iloc[:, :-5].dropna(axis=1).values
-    specerr = df.loc['Error'].iloc[:, :-5].dropna(axis=1).values
+    spec = df.loc['Value'].drop(['Date', 'sh'
+                                 , 'Mask', 'Transit'
+                                 , 'Scan Direction']
+                                , axis=1).dropna(axis=1).values
+    specerr = df.loc['Error'].drop(['Date', 'sh'
+                                    , 'Mask', 'Transit'
+                                    , 'Scan Direction']
+                                   , axis=1).dropna(axis=1).values
     date = df.loc['Value','Date'].values
     dir_array = df.loc['Value','Scan Direction'].values
     mask = df.loc['Value', 'Mask'].values
-    sh = df.loc['Value','sh'].values
-    HST_phase_ref = date[mask][first]
-    nexposure = len(date)
+    if ignore_first_exposures == False:
+        mask = np.ones_like(mask)
 
+
+    # The two files (processed data with exposures and without) are identical except for mask (As expected, though
+    # sh not changing is nice). But, when mixed (mask included with no-mask residual extraction, and possibly
+    # vice versa), the model is a little off and there's a ramp. Probably HST phase -origin related. How to
+    # not overwrite mask??
+    
+    sh = df.loc['Value', 'sh'].values
+
+    HST_phase_ref = date[mask][first+HSTmidpoint]
+    nexposure = len(date)
     flux = np.sum(spec, axis=1)
     err = np.sqrt(np.sum(specerr*specerr, axis=1))
 
@@ -67,11 +92,12 @@ def wlresids(visit
     params = models_df.loc['Params', :'Model 124'].values.T
     model_tested = models_df.loc['Model Tested?', :'Model 124'].values
     nModels = params.shape[0]
-
+    
     # CALCULATE HST PHASE AT EACH TIME
     HSTper = 96.36 / (24.*60.)
     HSTphase = (date - HST_phase_ref) / HSTper
     HSTphase = HSTphase - np.floor(HSTphase)
+    # HST cutoff, sometimes 0.6 is necessary to avoid odd model predictions for first orbit.
     HSTphase[HSTphase > 0.5] = HSTphase[HSTphase > 0.5] - 1.0
     #plt.clf()
     #plt.close()
@@ -102,7 +128,7 @@ def wlresids(visit
             per = par[16]
             t = par[1]
             # SAVE RESIDUALS
-            if s == 44:
+            if s == 49:
                 plt.clf()
                 plt.plot(date, 1-resids, 'ro',label='Model - Data')
                 plt.plot(date, fluxnorm, 'bs', label='Normalized Flux')
@@ -146,12 +172,17 @@ if __name__ == '__main__':
     transit = config.getboolean('DATA', 'transit')
 
     include_error_inflation = config.getboolean('MODEL', 'include_error_inflation')
+    ignore_first_exposures = config.getboolean('DATA', 'ignore_first_exposures')
     ld_type = config.get('MODEL', 'limb_type')
+    openar = config.getboolean('MODEL', 'openar')
     one_slope = config.getboolean('MODEL', 'one_slope')
     
     visit = planet + '/' + visit_number + '/' + direction
+
     resids = wlresids(visit
-                      , include_error_inflation=include_error_inflation
                       , transit=transit
+                      , include_error_inflation=include_error_inflation
                       , ld_type=ld_type
+                      , ignore_first_exposures=ignore_first_exposures
+                      , openar=openar
                       , one_slope=one_slope )

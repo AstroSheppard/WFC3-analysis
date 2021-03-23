@@ -397,21 +397,41 @@ def preprocess_whitelight(visit
     # Classify the data by each HST orbit. Returns array (orbit)
     # which contains the indeces for the start of each orbit
 
+
+    orbit = get_orbits(date_sav)
+    firsts = orbit[:-1]
+    # Ignore the first 3 points of the first orbit to
+    # account for slower ramp. 
+    laters = orbit[1]+np.arange(3)
+    # laters = firsts+2
+    firsts = np.append(firsts, firsts+1)
+    firsts = np.append(firsts, laters)
+    # Quick test on autocorrelation if the few outliers in
+    # the last orbit are removed (in addition to first points).
+    # firsts = np.append(firsts, [89, 90, 91])
+    light_mask[firsts] = False
     if ignore_first_exposures == True:
-        orbit = get_orbits(date_sav)
-        firsts = orbit[:-1]
-        # Ignore the first 3 points of the first orbit to
-        # account for slower ramp. 
-        laters = orbit[1]+np.arange(3)
-        # laters = firsts+2
-        firsts = np.append(firsts, firsts+1)
-        firsts = np.append(firsts, laters)
-        light_mask[firsts] = False
-        
-    dir_array = dir_save[light_mask]
-    alldate = date_sav[light_mask]
-    allspec1d = spec1d_sav[light_mask]
-    allerr1d = err1d_sav[light_mask]
+        dir_array = dir_save[light_mask]
+        alldate = date_sav[light_mask]
+        allspec1d = spec1d_sav[light_mask]
+        allerr1d = err1d_sav[light_mask]
+    else:
+        dir_array = dir_save.copy()
+        alldate = date_sav.copy()
+        allspec1d = spec1d_sav.copy()
+        allerr1d = err1d_sav.copy()
+
+    mask2= np.ones(len(dir_array), dtype=bool)
+    # Quick test on autocorrelation if the few outliers in
+    # the last orbit are removed (and only them)
+    # Note: this did improve autocorrelation, and increased depth by about 15ppm.
+    # This is intuitive, since the out of transit baseline is raised. Same for above.
+    # mask2[[89, 90, 91]]=False
+    # dir_array = dir_save[mask2]
+    # alldate = date_sav[mask2]
+    # allspec1d = spec1d_sav[mask2]
+    # allerr1d = err1d_sav[mask2]
+    
     orbit = get_orbits(alldate)
     planet = visit[:-8]
     props, errs = inputs('../planets/%s/inputs.dat' % planet, transit)
@@ -597,6 +617,9 @@ def preprocess_whitelight(visit
         save_name = save_name + '_linearLD'
     if ignore_first_exposures == True:
         save_name = save_name + '_no_first_exps'
+    if openar == True:
+        save_name = save_name + '_openar'
+        
     results=wl.whitelight2020(props
                               , date
                               , spec1d.data
@@ -639,6 +662,12 @@ def preprocess_whitelight(visit
                           , 'Depth', 'c1', 'c2', 'c3', 'c4']
         sys_p['Visit']=data_save_name
         sys_p=sys_p.set_index('Visit')
+        u1 = gl.get_limb(planet,14000., 'u', source=ld_source)
+        df2 = pd.DataFrame([[u1.round(4), 0, 'u1']]
+                           , columns=sys_p.columns
+                           , index=[sys_p.index[0]])
+        sys_p = sys_p.append(df2)
+        breakpoint()
 
         try:
             cur=pd.read_csv('./data_outputs/processed_data.csv', index_col=[0,1])
@@ -658,16 +687,6 @@ def preprocess_whitelight(visit
     return [results, user_inputs]
 
 if __name__=='__main__':
-
-
-
-    #if len(sys.argv) < 4:
-    #    sys.exit('Format: preprocess_whitelight.py [planet] [visit] [direction]')
-    #visit=sys.argv[1]+'/'+sys.argv[2]
-    #direction=sys.argv[3]
-    #transit=True
-    #if len(sys.argv)==5:
-    #    transit=bool(int(sys.argv[4]))
 
     config = configparser.ConfigParser()
     config.read('config.py')
@@ -742,10 +761,11 @@ if __name__=='__main__':
     inp = pd.DataFrame(inputs, columns=['User Inputs'])
     inp['Visit'] = save_name
     inp['Transit'] = transit
-    inp = inp.set_index('Visit')
+    inp['Ignore first exposures'] = ignore_first_exposures
+    inp = inp.set_index(['Visit', 'Ignore first exposures'])
     try:
-        cur = pd.read_csv('./data_outputs/preprocess_info.csv', index_col=0)
-        cur = cur.drop(visit+'/'+direction, errors='ignore')
+        cur = pd.read_csv('./data_outputs/preprocess_info.csv', index_col=[0, 1])
+        cur = cur.drop((visit+'/'+direction, ignore_first_exposures), errors='ignore')
         cur = pd.concat((cur,inp), sort=False)
         cur.to_csv('./data_outputs/preprocess_info.csv')
     except IOError:

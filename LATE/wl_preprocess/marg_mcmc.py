@@ -494,9 +494,22 @@ INPUTS:
     # in systematic models.
     sh = get_shift(allspec)
     HSTper = 96.36 / (24.*60.)
-    HSTphase = (img_date-img_date[0]) / HSTper
+    hst_midpoint = int(np.mean([orbit_start, orbit_end]))
+    HSTphase = (img_date-img_date[hst_midpoint]) / HSTper
     HSTphase = HSTphase - np.floor(HSTphase)
-    HSTphase[HSTphase > 0.5] = HSTphase[HSTphase > 0.5] -1.0
+    # Alert: sometimes, expanding this to the first orbit
+    # results in a terrible fit. This can be hacked by setting
+    # the limit to 0.6 instead (or something similar). I noticed
+    # setting the limit to 1 (0-1, instead of -.5 to .5) resulted in
+    # a pretty different fit. No difference for 0.6. This is because first
+    # two points of the last orbit are at 0.97 and 0.99.
+
+    # This is okay, because HST phase in ignored first orbit may
+    # be out-of-sample. If we only fit on hst phase from -.1-.5, then a -.5
+    # is not necessarily fit well. Coefficients are not tuned for that
+    # range. 
+
+    HSTphase[HSTphase>0.5] = HSTphase[HSTphase>0.5] - 1.0
 
     # Initialize every potential parameter, starting with astrophysical ones.
     rprs = p_start[0, 0]
@@ -1053,7 +1066,7 @@ INPUTS:
     if mcmc == True:
         start_time = time.time()
         if save_mcmc == True:
-            mc_dir = './emcee_runs/marg/' + save_name
+            mc_dir = './data_outputs/emcee_runs/marg/' + save_name
             try:
                 os.makedirs(mc_dir)
             except OSError:
@@ -1328,19 +1341,21 @@ INPUTS:
         wl['Limb-darkening type']=ld_type
 
 
-        data_save_name = save_name.split('_')[0]
+        # data_save_name = save_name.split('_')[0]
+        data_save_name = save_name
         ind2a=pd.MultiIndex.from_product([[data_save_name],['data']*nexposure])
         colsa=['Obs Date', 'Normalized Flux', 'Flux', 'Normalized Error'
                , 'Error', 'Wavelength Shift']
         dataa=np.vstack((img_date, y, rawflux, error, rawerr, sh))
         colsb=['Values']
         datab=[marg_depth, marg_depth_err, marg_epoch, marg_epoch_err, marg_inc, marg_inc_err
-               , marg_ar, marg_ar_err, rms, phot_err, ratio, norm, scale]
+               , marg_ar, marg_ar_err, rms, phot_err, ratio, norm, scale, hst_midpoint]
         ind2b=pd.MultiIndex.from_product([[data_save_name]
                                           ,['Marg Depth', 'Depth err'
                                             , 'Marg Epoch', 'Epoch err', 'Inc', 'Inc err'
                                             , 'ar', 'ar err', 'RMS', 'photon err' , 'ratio'
-                                            , 'Flux Norm Value', 'Error Scaling']])
+                                            , 'Flux Norm Value', 'Error Scaling'
+                                            , 'HST midpoint']])
         df1 = pd.DataFrame(dataa.T, columns=colsa, index=ind2a)
         df2 = pd.DataFrame(datab, columns=colsb, index=ind2b)
         wl_data = pd.concat((df1,df2))
