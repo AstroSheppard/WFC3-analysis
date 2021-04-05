@@ -232,8 +232,14 @@ def lnprior(theta, priors):
 
 def residuals(p, data):
     x, y, err, sh, HSTphase, dir_array, transit, ld_type, one_slope = data
-    ym = lightcurve(p, x, sh, HSTphase, dir_array, transit=transit
-                    , ld_type=ld_type, one_slope=one_slope)
+    ym = lightcurve(p
+                    , x
+                    , sh
+                    , HSTphase
+                    , dir_array
+                    , transit=transit
+                    , ld_type=ld_type
+                    , one_slope=one_slope)
     return (y-ym) / err
 
 def get_shift(allspec):
@@ -388,9 +394,10 @@ def systematic_model_grid_selection(size=4
     log_grid[:, 23] = int(not log_slope)
     log_grid[:, 24] = int(not log_slope)
     grid = np.hstack((grid.T, log_grid.T)).T
+
     # If dir_array isn't all ones or all zeros, then turn on reverse slope
     # and normalization whenever forward slope/norm is on
-    if 0 < np.sum(dir_array) < len(dir_array):
+    if 0<np.sum(dir_array)<len(dir_array):
         grid[:, 25:] = grid[:, 18:25]
         # Hack to fit for only 1 directional slope even with forward/reverse array
         if one_slope == True:
@@ -399,70 +406,69 @@ def systematic_model_grid_selection(size=4
     return grid
 
 
-def whitelight2020(p_start, img_date, allspec, allerr, dir_array, plotting=False
-                   , mcmc = False, fixtime=False, norandomt=False, openinc=False
-                   , openar=False, include_error_inflation=True, ld_type="nonlinear"
-                   , linear_slope=True, quad_slope=False, exp_slope=False
-                   , log_slope=False, one_slope=True, save_mcmc=False
-                   , save_model_info=False, transit=False, save_name=None):
+def whitelight2020(p_start
+                   , img_date
+                   , allspec
+                   , allerr
+                   , dir_array
+                   , plotting=False
+                   , plot_best=True
+                   , mcmc = False
+                   , fixtime=False
+                   , norandomt=False
+                   , openinc=False
+                   , openar=False
+                   , include_error_inflation=True
+                   , ld_type="nonlinear"
+                   , linear_slope=True
+                   , quad_slope=False
+                   , exp_slope=False
+                   , log_slope=False
+                   , one_slope=True
+                   , save_mcmc=False
+                   , save_model_info=False
+                   , transit=False
+                   , save_name=None):
     """
-  NAME:
-       WHITELIGHT2020
 
-  AUTHOR:
-     Based on Hannah R. Wakeford, NASA/GSFC code 693, Greenbelt, MD 20771
-     hannah.wakeford@nasa.gov
+    Function to perform Levenberg-Marquardt least-squares minimization with
+    KMPFIT and/or MCMC on spectral data from HST WFC3 to compute the white light curve
 
-     Kyle Sheppard: Converted to python and added eclipse functionality
+    INPUTS:
 
-  PURPOSE:
-     Perform Levenberg-Marquardt least-squares minimization with
-     MPFIT on spectral data from HST WFC3 to compute the band-integrated light curve
+    P_START - priors for each parameter used in the fit passed in
+    an array in the form
+    p_start = [rprs,epoch,inclin,a/rs,Per, fp]
 
-  MAJOR TOPICS:
-     Generate band-integrated light curve
-     Determine the most favoured systematic model for the observation
-     Measure the marginalised secondary eclipse depth
+    rprs - Planetary radius/stellar radius
+    epoch - center of eclipse time
+    inclin - inclination of the planetary orbit
+    a/Rs - semimajor axis normalized by stellar radius
+    Per - Period of the planet in days
+    fp - event depth
 
-  CALLING SEQUENCE:;
-     whitelight_eclipse(p_start, img_date, allspec,plotting=False
-                        fixtime=False, norandomt=False, openinc=False, savefile=False
-                        , transit=False)
+    IMG_DATE - array of time of each exposure as extracted from the .fits header (MJD)
 
-INPUTS:
+    ALLSPEC - 2D array each row containing the target stellar
+    spectrum extracted from the exposure images.
 
- P_START - priors for each parameter used in the fit passed in
- an array in the form
- p_start = [rprs,epoch,inclin,a/rs,Per, fp]
+    ALLERR - Uncertainty for each pixel flux in allspec
 
-   rprs - Planetary radius/stellar radius
-   epoch - center of eclipse time
-   inclin - inclination of the planetary orbit
-   a/Rs - semimajor axis normalized by stellar radius
-   Per - Period of the planet in days
-   fp - event depth
+    dir_array - Of length img_date indicating if each exposure is a forward scan (0) or reverse (1)
 
- IMG_DATE - array of time of each exposure as extracted from the .fits header (MJD)
+    savewl - True to save results
 
+    plotting - set as True or False to see the model fits.
+    
+    FIXTIME - True to keep center of eclipse/transit time fixed
+    
+    NORANDOMT - True to not allow small random changes to center time
 
- ALLSPEC - 2D array each row containing the target stellar
-           spectrum extracted from the exposure images.
+    OPENINC - True to fit for inclination
 
- ALLERR - Uncertainty for each pixel flux in allspec
+    TRANSIT - True for transit light curves, default false for eclipse
 
- dir_array - Of length img_date indicating if each exposure is a forward scan (0) or reverse (1)
-
- savewl - True to save results
-
- plotting - set as True or False to see the plots
-
- FIXTIME - True to keep center of eclipse/transit time fixed
-
- NORANDOMT - True to not allow small random changes to center time
-
- OPENINC - True to fit for inclination
-
- TRANSIT - True for transit light curves, default false for eclipse
+    Plus a few more options.
 
     """
     
@@ -487,28 +493,21 @@ INPUTS:
     norm = np.median(y[orbit_start:orbit_end])
     rawerr = err.copy()
     rawflux = y.copy()
-    err = err/norm
-    y = y/norm
+    err = err / norm
+    y = y / norm
 
     # Determine wavelength shift and HST phase, which are arguments
     # in systematic models.
     sh = get_shift(allspec)
+
+    # Sometimes, expanding HST phase to the first orbit
+    # results in a terrible fit. This is fixed by using the midpoint instead of
+    # the zeroth orbital point, since this fits on a -.25-.25 scale (and so nothing is
+    # really out of sample: maybe +-.3 comes up, but this is easier to extrapolate to).
     HSTper = 96.36 / (24.*60.)
     hst_midpoint = int(np.mean([orbit_start, orbit_end]))
     HSTphase = (img_date-img_date[hst_midpoint]) / HSTper
     HSTphase = HSTphase - np.floor(HSTphase)
-    # Alert: sometimes, expanding this to the first orbit
-    # results in a terrible fit. This can be hacked by setting
-    # the limit to 0.6 instead (or something similar). I noticed
-    # setting the limit to 1 (0-1, instead of -.5 to .5) resulted in
-    # a pretty different fit. No difference for 0.6. This is because first
-    # two points of the last orbit are at 0.97 and 0.99.
-
-    # This is okay, because HST phase in ignored first orbit may
-    # be out-of-sample. If we only fit on hst phase from -.1-.5, then a -.5
-    # is not necessarily fit well. Coefficients are not tuned for that
-    # range. 
-
     HSTphase[HSTphase>0.5] = HSTphase[HSTphase>0.5] - 1.0
 
     # Initialize every potential parameter, starting with astrophysical ones.
@@ -518,12 +517,12 @@ INPUTS:
     a_r = p_start[3, 0]
     Per = p_start[4, 0]
     # Depth shown as fp, which stands for Flux_planet, a remnant from eclipse depth origins.
-    fp=p_start[5, 0]
+    fp = p_start[5, 0]
     # Limb-darkening parameters shown as c1-c4.
-    c1=p_start[6, 0]
-    c2=p_start[7, 0]
-    c3=p_start[8, 0]
-    c4=p_start[9, 0]
+    c1 = p_start[6, 0]
+    c2 = p_start[7, 0]
+    c3 = p_start[8, 0]
+    c4 = p_start[9, 0]
     # Forward-scan and reverse-scan normalizations
     fnorm = 1.0
     rnorm = 1.0
@@ -575,7 +574,7 @@ INPUTS:
                     , 'rlinear', 'rquad', 'rexpb'
                     , 'rexpc', 'rlogb', 'rlogc' ])
 
-    nParam=len(p0)
+    nParam = len(p0)
     # Retrieve grid of systematic models to test.
     grid = systematic_model_grid_selection(size=4
                                            , dir_array=dir_array
@@ -636,9 +635,9 @@ INPUTS:
             continue
         if quad_slope==False and 49<s<75:
             continue
-        if log_slope==False and 74<s<100:
+        if exp_slope==False and 74<s<100:
             continue
-        if exp_slope==False and s>99:
+        if log_slope==False and s>99:
             continue
             
         system=systematics
@@ -786,15 +785,15 @@ INPUTS:
             continue
         if quad_slope==False and 49<s<75:
             continue
-        if log_slope==False and 74<s<100:
+        if exp_slope==False and 74<s<100:
             continue
-        if exp_slope==False and s>99:
+        if log_slope==False and s>99:
             continue
 
         model_tested[s] = True
         # Define the new priors as the parameters from the best fitting
         # systematic model.
-        p0=run1_params[s,:]
+        p0 = run1_params[s, :]
         if fixtime==True: systematics[1] = 1
         if openinc==True: systematics[10] = 0
         if openar==True: systematics[11] = 0
@@ -826,7 +825,7 @@ INPUTS:
 
         # Use either standard error (scaled for reduced chi-squared), or asymptotic error.
         # stderror = m2.stderr
-        stderror=m2.xerror
+        stderror = m2.xerror
         
         print()
         print('Model ', s)
@@ -870,9 +869,15 @@ INPUTS:
                          , ecolor='green', ls='', label='De-trended Data')
             plt.legend(numpoints=1)
             hst_power = 4 - np.sum(systematics[2:6])
-            slope_power = 2 - np.sum(systematics[19:21])
             xshift_power = 4 - np.sum(systematics[6:10])
+            slope_power = 2 - np.sum(systematics[19:21])
             power_label = r'$\phi^%d$ + HST$^%d$ + $\delta^%d$' % (slope_power, hst_power, xshift_power)
+            if systematics[22]==0:
+                slope_power='exp'
+                power_label = r'$\phi^{%s}$ + HST$^%d$ + $\delta^%d$' % (slope_power, hst_power, xshift_power)
+            if systematics[23]==0:
+                slope_power='log'
+                power_label = r'$\phi^{%s}$ + HST$^%d$ + $\delta^%d$' % (slope_power, hst_power, xshift_power)
             plt.text(0.3,0.9, power_label, transform=ax.transAxes)
             plt.draw()
             plt.pause(0.1)
@@ -942,8 +947,8 @@ INPUTS:
     mean_depth = np.sum(w_q*depth)
     theta_qi = depth
     variance_theta_qi = depth_err * depth_err
-    error_theta_i = np.sqrt(np.sum(w_q*((theta_qi - mean_depth)**2 + variance_theta_qi )))
-    print('Depth = %f  +/-  %f' % (mean_depth, error_theta_i))
+    error_theta_i = np.sqrt(np.sum(w_q*((theta_qi - mean_depth)**2 + variance_theta_qi)))
+    print('Depth = %f  +/-  %f' % (mean_depth*1e6, error_theta_i*1e6))
     marg_depth = mean_depth
     marg_depth_err = error_theta_i
 
@@ -1011,8 +1016,9 @@ INPUTS:
     marg_c_err[0] = error_c0
     
     
-    if plotting == True:
+    if plot_best==True:
         plt.close()
+        fig, ax = plt.subplots()
         plt.errorbar(sys_lightcurve_x[bestfit,:], sys_lightcurve[bestfit,:], sys_lightcurve_err[bestfit,:]
                      ,marker='o', color='b', ecolor='b', ls='')
         plt.plot(sys_model_x[bestfit,:], sys_model[bestfit,:], ls='-')
@@ -1038,29 +1044,30 @@ INPUTS:
     print('Rms: %f' % rms)
     print('Photon error: %f' % phot_err)
     print('Ratio: %f' % ratio)
-
-    ####### Plot the auto-correlation function of the residuals ########
     best = a[0]
-    ac_resids = autocorr_func_1d(sys_residuals[best,:], norm=True)
-    mins = np.zeros_like(ac_resids)
-    mins[ac_resids<0] = ac_resids[ac_resids<0]
-    maxs = np.zeros_like(ac_resids)
-    maxs[ac_resids>0]=ac_resids[ac_resids>0]
-
-    plt.clf()
-    plt.close()
-    lags = np.arange(len(ac_resids))
-    plt.plot(ac_resids, 'bo')
-    plt.vlines(lags, mins, maxs, 'b')
-    sig = 0.05 # 95% confidence interval
-    conf = scipy.stats.norm.ppf(1-sig/2.)/np.sqrt(len(sys_residuals[best,:]))
-    plt.plot(lags, np.zeros_like(ac_resids)+conf, color='r', label='2 sigma range')
-    plt.plot(lags, np.zeros_like(ac_resids)-conf, color = 'r')
-    plt.title('Autocorrelation function of residuals')
-    plt.legend()
-    plt.show()
-    plt.clf()
-    plt.close()
+    ####### Plot the auto-correlation function of the residuals ########
+    if plot_best==True:
+        ac_resids = autocorr_func_1d(sys_residuals[best,:], norm=True)
+        mins = np.zeros_like(ac_resids)
+        mins[ac_resids<0] = ac_resids[ac_resids<0]
+        maxs = np.zeros_like(ac_resids)
+        maxs[ac_resids>0]=ac_resids[ac_resids>0]
+        
+        plt.clf()
+        plt.close()
+        lags = np.arange(len(ac_resids))
+        plt.plot(ac_resids, 'bo')
+        plt.vlines(lags, mins, maxs, 'b')
+        # For 95% confidence interval, set sig to 0.05.
+        sig = 0.05 
+        conf = scipy.stats.norm.ppf(1-sig/2.) / np.sqrt(len(sys_residuals[best,:]))
+        plt.plot(lags, np.zeros_like(ac_resids)+conf, color='r', label='2 sigma range')
+        plt.plot(lags, np.zeros_like(ac_resids)-conf, color='r')
+        plt.title('Autocorrelation function of residuals')
+        plt.legend()
+        plt.show()
+        plt.clf()
+        plt.close()
 
     ####### EMCEE ###########
     if mcmc == True:
@@ -1078,6 +1085,8 @@ INPUTS:
         else:
             mc_dir = False
 
+        # Best quad slope model L98=59c
+        # best = 66
         # Use outputs from KMPFIT (weighted non-linear least squares) as initial 
         # starting point and setting priors for MCMC.
         mcmc_systematic_model = grid[best,:]

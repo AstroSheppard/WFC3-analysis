@@ -190,7 +190,7 @@ def preprocess_whitelight(visit
                           , check=True
                           , ignore_first_exposures=False
                           , inp_file=False
-                          , ld_source='claret2011.csv'
+                          , ld_source='claret2012.csv'
                           , save_processed_data=False
                           , transit=False
                           , data_plots=True
@@ -206,7 +206,8 @@ def preprocess_whitelight(visit
                           , log_slope=False
                           , one_slope=True
                           , norandomt=True
-                          , fit_plots=True
+                          , fit_plots=False
+                          , plot_best=True
                           , save_mcmc=False
                           , save_model_info=False):
 
@@ -402,10 +403,12 @@ def preprocess_whitelight(visit
     firsts = orbit[:-1]
     # Ignore the first 3 points of the first orbit to
     # account for slower ramp. 
-    laters = orbit[1]+np.arange(3)
-    # laters = firsts+2
-    firsts = np.append(firsts, firsts+1)
-    firsts = np.append(firsts, laters)
+    first_orbit_extras = orbit[1]+np.arange(6)
+    seconds = firsts + 1
+    thirds = firsts + 2
+    firsts = np.append(firsts, seconds)
+    firsts = np.append(firsts, thirds)
+    firsts = np.append(firsts, first_orbit_extras)
     # Quick test on autocorrelation if the few outliers in
     # the last orbit are removed (in addition to first points).
     # firsts = np.append(firsts, [89, 90, 91])
@@ -611,14 +614,16 @@ def preprocess_whitelight(visit
     print(props)
     save_name = visit + '/' + direction
     data_save_name = save_name
-    if include_error_inflation == False:
+    if include_error_inflation==False:
         save_name = save_name + '_no_inflation'
-    if ld_type == 'linear':
+    if ld_type=='linear':
         save_name = save_name + '_linearLD'
-    if ignore_first_exposures == True:
+    if ignore_first_exposures==True:
         save_name = save_name + '_no_first_exps'
-    if openar == True:
+    if openar==True:
         save_name = save_name + '_openar'
+    if quad_slope==True:
+        save_name = save_name + '_quad'
         
     results=wl.whitelight2020(props
                               , date
@@ -626,6 +631,7 @@ def preprocess_whitelight(visit
                               , err1d.data
                               , dir_array
                               , plotting=fit_plots
+                              , plot_best=plot_best
                               , mcmc=mcmc
                               , include_error_inflation=include_error_inflation
                               , norandomt=norandomt
@@ -667,7 +673,6 @@ def preprocess_whitelight(visit
                            , columns=sys_p.columns
                            , index=[sys_p.index[0]])
         sys_p = sys_p.append(df2)
-        breakpoint()
 
         try:
             cur=pd.read_csv('./data_outputs/processed_data.csv', index_col=[0,1])
@@ -714,7 +719,7 @@ if __name__=='__main__':
     log_slope = config.getboolean('MODEL', 'log_slope')
     one_slope = config.getboolean('MODEL', 'one_slope')
     fit_plots = config.getboolean('MODEL', 'fit_plots')
-   
+    plot_best = config.getboolean('MODEL', 'plot_best')
 
     save_mcmc = config.getboolean('SAVE', 'save_mcmc')
     save_model_info = config.getboolean('SAVE', 'save_model_info')
@@ -746,15 +751,16 @@ if __name__=='__main__':
                                                 , log_slope=log_slope
                                                 , one_slope=one_slope
                                                 , fit_plots=fit_plots
+                                                , plot_best=plot_best
                                                 , mcmc=mcmc
                                                 , save_mcmc=save_mcmc)
 
  
-    print(best_results)
-    print("Marg Depth: %f +/- %f" % (best_results[0]*1e6, best_results[1]*1e6))
-    print("Marg Central Event Time: %f +/- %f" % (best_results[2], best_results[3]))
-    print("Marg Inclination: %f +/- %f" % (best_results[4], best_results[5]))
-    print("Marg a/R*: %f +/- %f" % (best_results[6], best_results[7]))
+    # print(best_results)
+    print("Marg Depth: %.1f +/- %.1f" % (best_results[0]*1e6, best_results[1]*1e6))
+    print("Marg Central Event Time: %.6f +/- %.6f" % (best_results[2], best_results[3]))
+    print("Marg Inclination: %.2f +/- %.2f" % (best_results[4], best_results[5]))
+    print("Marg a/R*: %.3f +/- %.3f" % (best_results[6], best_results[7]))
     print("Marg limb darkening params: ", best_results[8], "+/-", best_results[9])
 
     save_name = visit + '/' + direction

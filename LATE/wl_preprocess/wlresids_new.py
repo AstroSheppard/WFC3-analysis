@@ -15,8 +15,9 @@ def wlresids(visit
              , include_error_inflation=True
              , ld_type='nonlinear'
              , ignore_first_exposures=False
-             , openar = False
-             , one_slope=True):
+             , openar=False
+             , one_slope=True
+             , quad_slope=False):
 
     data_index = visit
     if include_error_inflation == False:
@@ -28,6 +29,8 @@ def wlresids(visit
         visit = visit + '_no_first_exps'
     if openar == True:
         visit = visit + '_openar'
+    if quad_slope== True:
+        visit = visit + '_quad'
 
     data_dir = './data_outputs/'
     pre = pd.read_csv(data_dir+'preprocess_info.csv', index_col=[0,1]).loc[(data_index, ignore_first_exposures)]
@@ -51,17 +54,11 @@ def wlresids(visit
                                     , 'Mask', 'Transit'
                                     , 'Scan Direction']
                                    , axis=1).dropna(axis=1).values
-    date = df.loc['Value','Date'].values
-    dir_array = df.loc['Value','Scan Direction'].values
+    date = df.loc['Value', 'Date'].values
+    dir_array = df.loc['Value', 'Scan Direction'].values
     mask = df.loc['Value', 'Mask'].values
     if ignore_first_exposures == False:
         mask = np.ones_like(mask)
-
-
-    # The two files (processed data with exposures and without) are identical except for mask (As expected, though
-    # sh not changing is nice). But, when mixed (mask included with no-mask residual extraction, and possibly
-    # vice versa), the model is a little off and there's a ramp. Probably HST phase -origin related. How to
-    # not overwrite mask??
     
     sh = df.loc['Value', 'sh'].values
 
@@ -128,7 +125,7 @@ def wlresids(visit
             per = par[16]
             t = par[1]
             # SAVE RESIDUALS
-            if s == 49:
+            if s==49 or s==74:
                 plt.clf()
                 plt.plot(date, 1-resids, 'ro',label='Model - Data')
                 plt.plot(date, fluxnorm, 'bs', label='Normalized Flux')
@@ -176,6 +173,7 @@ if __name__ == '__main__':
     ld_type = config.get('MODEL', 'limb_type')
     openar = config.getboolean('MODEL', 'openar')
     one_slope = config.getboolean('MODEL', 'one_slope')
+    quad_slope = config.getboolean('MODEL', 'quad_slope')
     
     visit = planet + '/' + visit_number + '/' + direction
 
@@ -185,4 +183,5 @@ if __name__ == '__main__':
                       , ld_type=ld_type
                       , ignore_first_exposures=ignore_first_exposures
                       , openar=openar
-                      , one_slope=one_slope )
+                      , one_slope=one_slope
+                      , quad_slope=quad_slope)
