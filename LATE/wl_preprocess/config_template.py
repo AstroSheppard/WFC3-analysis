@@ -1,3 +1,7 @@
+# After cloning git, copy this file and rename it "config.py".
+# You can then change the config.py file without creating
+# conflicts for future git pulls.
+
 # Inputs to all wl_preprocess files, including:
 # preprocess_whitelight.py, wlresids_new.py,
 # wave_solution.py.

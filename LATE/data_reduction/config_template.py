@@ -1,3 +1,7 @@
+# After cloning git, copy this file and rename it "config.py".
+# You can then change the config.py file without creating
+# conflicts for future git pulls.
+
 [DATA]
 planet = l9859c
 visit_number = visit00
