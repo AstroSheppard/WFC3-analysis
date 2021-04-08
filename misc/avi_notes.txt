@@ -25,11 +25,12 @@ cd ~/Documents/Science_Projects/AstroSheppard/WFC3-analysis/LATE
 2. Pull down current version from git
 % git pull
 
-To start virtual environment:
+To start virtual environment and iPython:
 % cd to desired directory)
 virtualenv venv
 source venv/bin/activate
-% deactivate to leave venv
+(% deactivate to leave venv)
+ipython
 
 How to Merge to Github:
 git status: shows what hasn't been committed or untracked
@@ -38,8 +39,9 @@ git add/rm filename:  add/remove files on git
 git add -A: stages all changes
 git add . : stages new files and modifications, without deletions
 git add -u : stages modifications and deletions, without new files
-git commit -m YY, where YY is the note about what changed: This tells local git that you’ve made changes
+git commit -m 'YY', where YY is the note about what changed: This tells local git that you’ve made changes
 git push:  pushes your version to repository
+git stash: stashes changes and reverts to the git versions
 
 
 To Download Data:
@@ -59,9 +61,9 @@ mget *.fits
 Copy files from proper directory in “Data” Directory (star & planet specific)
 
 
-Analysis Steps:
-1. Data Reduction:  Procedure for data analysis is in README.md in data_reduction
-2. Wl_preprocess:  Procedure is in README.md
+Analysis Steps (Procedure is in README.md for each step)
+1. Data Reduction
+2. Wl_preprocess
 3. Bin_analysis
 
 Tips:
