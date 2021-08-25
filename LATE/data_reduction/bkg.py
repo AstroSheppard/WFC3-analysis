@@ -106,7 +106,7 @@ def get_data(visit, direction=None, scan_adjustment=0):
 
 def maxrow(frame):
         """Return index of maximum flux row"""
-        f=np.sum(frame,axis=1)
+        f = np.sum(frame, axis=1)
         #f1=np.argmax(f)
         # Define max value as the median of the top 5
         # highest flux rows to avoid oddities from
@@ -359,7 +359,7 @@ if __name__ == '__main__':
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
     print("Click the top-left then the bottom-right corners")
     plt.show()
-    # need to make sure x and y are being extracted correctly
+
     coords= [int(i) for item in coords for i in item]
     x1=coords[1]
     x2=coords[3]

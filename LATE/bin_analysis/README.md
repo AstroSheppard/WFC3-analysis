@@ -1,6 +1,6 @@
 To use:
 Step 1: Edit config.py to desired inputs. Config.py contains descriptions for each input. 
-Step 2: %run bifit_new.py
+Step 2: %run binfit_new.py
 This calls on marg_new.py to fit spectra.
 Step 3 (optional): %run compare_spectra.py. If 2+ visits are provided, it will compare their spectra. See outputs/spectra.csv for visit names to use.
 

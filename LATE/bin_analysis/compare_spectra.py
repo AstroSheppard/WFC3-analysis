@@ -9,12 +9,19 @@ from scipy.io import readsav
 import marg_new
 from get_limb import get_limb
 
+def wmean(val, dval, axis=None):
+  dw = np.sum(1. / (dval*dval), axis=axis)
+  wsum = np.sum(val/dval/dval, axis=axis) / dw
+  error = np.sqrt(1./dw)
+  results = wsum, error
+  return results
 
 def compare_spectra(bin_widths
                     , visits
                     , methods
                     , save_comp=False
-                    , save_name='spectra_comp'):
+                    , save_name='spectra_comp'
+                    , weighted=False):
   """ Function to plot spectra from different methods for comparison.
   INPUTS:
   **visit_dict is a dictionary that contains the planet/visit/direction
@@ -39,7 +46,10 @@ def compare_spectra(bin_widths
     methods = methods * max_len
   assert(len(bin_widths) == len(visits))
   assert(len(bin_widths) == len(methods))
-  spec = pd.read_csv('./outputs/spectra.csv', index_col=[0,1,2])
+  spec = pd.read_csv('../bin_analysis/outputs/spectra.csv', index_col=[0,1,2])
+  depths = np.array([])
+  errors = np.array([])
+  plt.figure(figsize=(9,5))
   for i in range(max_len):
     cen = spec.loc[(visits[i], methods[i], int(bin_widths[i]))]
     # all_visit = spec.loc[visits[i]]
@@ -47,18 +57,41 @@ def compare_spectra(bin_widths
     spread=cen['Wavelength Range'].values
     depth=cen['Depth'].values
     error=cen['Error'].values
+    if weighted==True:
+      spec_len = depth.shape[0]
+      depths = np.append(depths, depth)
+      errors = np.append(errors, error)
     # if i==max_len-1:
     #   depth+=975
-    label = '%s %s' % (visits[i], methods[i])
+    if save_comp==False:
+      label = '%s %s' % (visits[i], methods[i])
+      
+    else:
+      split = visits[i].split('/')
+      label = '%s' % (split[1])
+      #label = '%s-pixels' % (bin_widths[i])
     plt.errorbar(center, depth, error, xerr=spread, fmt='o'
-                 , ls='', label=label )
+                 , ls='', label=label, alpha=0.5)
+    #if i==1:
+    #  plt.errorbar(center, depth, error, xerr=spread, fmt='o'
+    #               , ls='', label=label, alpha=1.0, color='k')
 
-  plt.legend()
+  if weighted==True:
+    depths = depths.reshape((len(bin_widths), spec_len))
+    errors = errors.reshape((len(bin_widths), spec_len))
+    weighted_depths, weighted_errors = wmean(depths, errors, axis=0)
+    breakpoint()
+    sa= pd.DataFrame(np.array([center, spread, weighted_depths, weighted_errors]).T, columns=['Wavelength', 'Spread', 'Depth', 'Error'])
+    breakpoint()
+    plt.errorbar(center, weighted_depths, weighted_errors, xerr=spread, fmt='o'
+                 , ls='', label='Weighted Spectrum', color='k')
+  plt.legend(loc='lower right')
   planet = visits[0].split('/')[0]
-  plt.title('%s transit' % (planet))
   plt.xlabel(r'Wavelength [$\mu$m]')
   plt.ylabel(r'$(R_p/R_s)^2$ [ppm]')
 
+
+    
   # # Renyu Hu Spectrum approximation for l98c
   # hu = [1.12,1.16, 1.19, 1.21, 1.24, 1.27, 1.295, 1.32, 1.35,1.38, 1.4,
   #       1.42, 1.45, 1.48, 1.51,1.55, 1.58, 1.62]
@@ -68,9 +101,11 @@ def compare_spectra(bin_widths
   # plt.errorbar(hu, hud, hue, fmt='o', color='r', ecolor='r'
   #              , ls='', label='Renyu', alpha=.5)
 
+     
   if save_comp==True:
-    plt.savefig('./outputs/spectra_figures/' + save_name + '.png')
+    plt.savefig('../bin_analysis/outputs/spectra_figures/' + save_name + '.pdf')
   else:
+    plt.title('%s transit' % (planet))
     plt.show()
 
   return 1

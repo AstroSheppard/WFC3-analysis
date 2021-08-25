@@ -15,9 +15,11 @@ def pixel_scale(y):
     """Function (from WFC3 paper),
     to determine max and min scale
     for given ycen"""
-    min=.0028*y+44.68
-    max=.0026*y+45.112
-    out=np.asarray([min,max])
+    # Add or subtract 150 from y to account for impact
+    # of vertical scan on y position.
+    min = 0.0028*(y-150) + 44.68
+    max = 0.0026*(150+y) + 45.112
+    out = np.asarray([min,max])
     return out
 
 def solution(p, flux, error, line, cont, sens, model_wave, coeffs, fjac=None):
@@ -27,12 +29,13 @@ def solution(p, flux, error, line, cont, sens, model_wave, coeffs, fjac=None):
 
     # Convert pixels to wavelengths
 
-    xref = coeffs[0]+coeffs[1]*(0-p[0])
+    xref = coeffs[0] + coeffs[1]*(0-p[0])
     pixel = list(range(len(flux)))
     x = p[1]*(pixel+p[2]) + xref
 
     model = (p[3]*line + p[4]*cont) / model_wave / model_wave * sens
-    model = model/np.max(model)
+    # model = (p[3]*line + p[4]*cont) / model_wave  * sens
+    model = model / np.max(model)
 
     # Interpolate model to match data wavelength
     theory = np.interp(x, model_wave, model)
@@ -48,7 +51,7 @@ def solution2(p, flux, error, model, model_wave, coeffs, fjac=None):
 
     xref = coeffs[0]+coeffs[1]*(0-p[0])
     pixel = list(range(len(flux)))
-    model_pixel = (model_wave - xref) / p[1] - p[2]
+    model_pixel = (model_wave - xref)/p[1] - p[2]
 
     # Interpolate model to match data wavelength
     theory = np.interp(pixel, model_pixel, model)
@@ -149,7 +152,7 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
     sens_fits.close()
 
     # Convert model wavelength to same units (angstroms)
-    wavelength = wavelength*10.
+    wavelength = wavelength * 10.
     # Interpolate (linear) sensitivity array to model wavelength grid
     result = np.interp(wavelength, wssens, through)
 
@@ -169,7 +172,7 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
     # Read in data, and normaliza the spectrum
     data = np.sort(glob.glob('../data_reduction/reduced/'+ visit
                              +'/'+ dire +'/final/'+"%03d"%exp+'.fits'))
-    spec = np.mean(fits.open(data[0])[0].data, axis=0)
+    spec = np.median(fits.open(data[0])[0].data, axis=0)
     err = np.sqrt(spec)
     # Normalize
     err = err / np.max(spec)
@@ -195,6 +198,8 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
             #ycor=0
             xcen=xref-xcor
             ycen=yref-ycor
+            # For testing more exact centroid
+            # xcen = 502 + (507 - .5 * 522) + .033 - 505 + xref
             exp.close()
             break
         else:
@@ -206,15 +211,15 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
 
     ####### FIT MODEL TO DATA ######
 
-    a=np.asarray([8.95431e3, 9.35925e-2])
-    xshift=0
+    a = np.asarray([8.95431e3, 9.35925e-2])
+    xshift = 0
 
     line_factor = 1
     cont_factor = 1
     p0 = [xcen, scale, xshift, line_factor, cont_factor]
     # If wavelength fits do not agree well, try setting the second 1
     # below to a zero.
-    fix = np.array([1, 0, 0, 1, 1])
+    fix = np.array([1, 0, 0, 0, 1])
     # fix = np.array([1, 0, 0, 0, 1])
     parinfo = []
     for i in range(len(p0)):
@@ -227,7 +232,7 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
     # parinfo[1]['limited']=[0,0]
     parinfo[1]['limits']=[limits[0], limits[1]]
 
-    err_scale = 1
+    err_scale = 2.0
     err = err_scale * err
     fa = {'flux':spec, 'error':err, 'line': line, 'cont': cont, 'sens': result
           , 'model_wave':wavelength, 'coeffs':a}
@@ -245,6 +250,9 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
     pcerror = perror * np.sqrt(bestnorm/dof)
 
     model = (parameters[3]*line + parameters[4]*cont) / wavelength / wavelength * result
+    # model = (parameters[3]*line + parameters[4]*cont) / wavelength * result
+    star = model / result
+    star = star/np.max(star)
     model = model/np.max(model)
     ###### Plot results ######
     xlen = len(spec)
@@ -260,8 +268,11 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
         plt.ylabel('Normalized Flux')
         p=plt.plot(wavelength/1e4, model, 'blue', label='Model Spectrum')
         p=plt.plot(wssens/1e4,through/max(through)/2, color='green', label='Model Component: G141 Sensitivity')
-        p=plt.plot(wavelength/1e4, f/max(f), 'black', label='Model Component: Stellar Flux')
-        plt.legend(numpoints=1)
+        p=plt.plot(wavelength/1e4, star, 'black', label='Model Component: Stellar Flux')
+        plt.legend(numpoints=1, prop={'size': 9})
+
+        breakpoint()
+    breakpoint()
     if savename:
         names = visit.split('/')
         plt.savefig('./data_outputs/wave_sol/' + names[0]
@@ -297,6 +308,8 @@ def wave_solution(visit, dire, plotting=False, savename=False, phase=False, tran
             extras.to_csv('./data_outputs/wave_sol/wave_solution_extras.csv')
 
     if plotting==True: plt.show()
+    #plt.savefig('l98b_wave.pdf')
+    #breakpoint()
     plt.clf()
     plt.close('all')
     return data_wave
@@ -320,12 +333,14 @@ if __name__ == '__main__':
         # Rough disagreement in wavelength for 4-pixel bins.
         wave_error = np.abs((wave_diff / pixel_size)*100/4)
         print('Percent disagreement in forward and reverse scan wave solutions: %.2f%%' % (wave_error))
+        breakpoint()
         if wave_error > 5:
             raise ValueError('Disagreement in forward and reverse' \
                              'scan wavelength solutions is too high.' \
                              'Double check wavelength solutions.')
         else:
             data_wave = (waver + wavef) / 2
+            breakpoint()
             wave_solution = pd.DataFrame(data_wave, columns=['Wavelength Solution [A]'])
             wave_solution['Visit'] = visit + '/' + direction
             wave_solution['Transit'] = transit
@@ -339,4 +354,5 @@ if __name__ == '__main__':
                 wave_solution.to_csv('./data_outputs/wave_sol/wave_solution.csv')
         
     else:
-        wave = wave_solution(visit, direction, plotting=plotting, savename=True, transit=transit)
+        wave = wave_solution(visit, direction, plotting=plotting, savename=False, transit=transit)
+        # wave = wave_solution(visit, direction, plotting=plotting, savename=True, transit=transit)

@@ -7,26 +7,26 @@ import pandas as pd
 import scipy.stats as st
 import matplotlib.pyplot as plt
 
-sys.path.append('./MCcubed')
-import MCcubed as mc3
+#sys.path.append('./MCcubed')
+import mc3
 
-def bin_op(input, size, op='mean'):
-    nbins=len(input)/size
-    out=np.zeros(nbins)
-    for i in range(nbins):
-        start=size*i
-        fin=size*(i+1)
-        if op=='mean':
-            out[i]=np.mean(input[start:fin])
-        elif op=='sum':
-            out[i]=np.sum(input[start:fin])
-        elif op=='sqsum':
-            out[i]=np.sqrt(np.sum(np.square(input[start:fin])))
-    return out
+# def bin_op(input, size, op='mean'):
+#     nbins=len(input)/size
+#     out=np.zeros(nbins)
+#     for i in range(nbins):
+#         start=size*i
+#         fin=size*(i+1)
+#         if op=='mean':
+#             out[i]=np.mean(input[start:fin])
+#         elif op=='sum':
+#             out[i]=np.sum(input[start:fin])
+#         elif op=='sqsum':
+#             out[i]=np.sqrt(np.sum(np.square(input[start:fin])))
+#     return out
 
 def correlated(resids, name):
     #n=resids.shape[0]/
-    n=9
+    n=10
     print(len(resids))
     rms=np.zeros(n)
     error=np.zeros(n)
@@ -40,7 +40,7 @@ def correlated(resids, name):
 
     #expected=rms[0]/np.sqrt(binsize)*np.sqrt(nbins/(nbins-1))
 
-    rms, rmslo, rmshi, expected, binsize=mc3.rednoise.binrms(resids,n)
+    rms, rmslo, rmshi, expected, binsize=mc3.stats.time_avg(resids,n)
 
 
     significant=np.where(rms/expected -1 > 2*rmslo/expected)[0]
@@ -69,41 +69,41 @@ def correlated(resids, name):
     return max_beta
 
 
-def wlcorrelated(resids, phase, error, name=None):
-    #n=len(resids)
-    n=9
-    #phot_err=np.zeros(n)
-    rms=np.zeros(n)
-    binsize=np.arange(n)+1
-    for i in range(n):
-        #f=bin_op(flux, i+1, op='sum')
-        #e=bin_op(error, i+1, op='sqsum')
-        r=bin_op(resids, i+1)
-        p = bin_op(phase, i+1)
-        #phot_err[i]=1e6*np.median(e/f)
-        rms[i]=np.std(r)
-        plt.plot(p, r, 'bo', ls='')
-        plt.show()
-    sys.exit()
-    expected=rms[0]/np.sqrt(binsize)
-    f=plt.figure()
-    plt.plot(binsize, expected ,color='black', label='Expected')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel('Exposures per bin')
-    plt.ylabel('RMS [ppm]')
-    plt.title('Whitelight Correlated Noise Test')
-    plt.plot(binsize, rms,'b', 'Actual')
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.legend(numpoints=1)
-    f.show()
+# def wlcorrelated(resids, phase, error, name=None):
+#     #n=len(resids)
+#     n=9
+#     #phot_err=np.zeros(n)
+#     rms=np.zeros(n)
+#     binsize=np.arange(n)+1
+#     for i in range(n):
+#         #f=bin_op(flux, i+1, op='sum')
+#         #e=bin_op(error, i+1, op='sqsum')
+#         r=bin_op(resids, i+1)
+#         p = bin_op(phase, i+1)
+#         #phot_err[i]=1e6*np.median(e/f)
+#         rms[i]=np.std(r)
+#         plt.plot(p, r, 'bo', ls='')
+#         plt.show()
+#     sys.exit()
+#     expected=rms[0]/np.sqrt(binsize)
+#     f=plt.figure()
+#     plt.plot(binsize, expected ,color='black', label='Expected')
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.xlabel('Exposures per bin')
+#     plt.ylabel('RMS [ppm]')
+#     plt.title('Whitelight Correlated Noise Test')
+#     plt.plot(binsize, rms,'b', 'Actual')
+#     plt.xscale('log')
+#     plt.yscale('log')
+#     plt.legend(numpoints=1)
+#     f.show()
 
-    if name:
-        pass
-      #f.savefig('wlcorrelated_'+name+'.png')
-    else:
-      f.show()
+#     if name:
+#         pass
+#       #f.savefig('wlcorrelated_'+name+'.png')
+#     else:
+#       f.show()
 
 def adtest(resids, photon_error):
 
@@ -168,41 +168,65 @@ def adtest(resids, photon_error):
   return res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf
 
 
-def wlpaper(visit, method='marg'):
+def wlpaper(visit, method='marg', savefig=False):
 
   """ This puts all information about quality of fit for
   one visit into a few nice figures"""
+  white='../wl_preprocess/data_outputs/'
+  data_index = visit.split('_')[0]
   if method=='marg':
-    modelfile='../wl_preprocess/wl_models_info.csv'
-    datafile='../wl_preprocess/wl_data.csv'
-    model_info=pd.read_csv(modelfile, index_col=[0,1]).loc[visit]
-    best_model=model_info.loc['Weight'].iloc[:-1].astype(float).idxmax()
-    best= model_info.loc[:,best_model]
-    resids=best.loc['Residuals'].values*1e6
-    data=pd.read_csv(datafile, index_col=[0,1]).loc[visit]
+    # Raw data
+    proc_file = white + 'processed_data.csv'
+    df = pd.read_csv(proc_file, index_col=[0,1]).loc[data_index]
+    spec = df.loc['Value'].drop(['Date', 'sh'
+                                 , 'Mask', 'Transit'
+                                 , 'Scan Direction']
+                                , axis=1).dropna(axis=1).values
+    specerr = df.loc['Error'].drop(['Date', 'sh'
+                                    , 'Mask', 'Transit'
+                                    , 'Scan Direction']
+                                   , axis=1).dropna(axis=1).values
+    date = df.loc['Value', 'Date'].values
+    #mask = df.loc['Value', 'Mask'].values
+    #if ignore_first_exposures == False:
+    #    mask = np.ones_like(mask)
 
-    flux=data.loc['data','Normalized Flux'].values
-    error=data.loc['data','Normalized Error'].values
-    nflux=data.loc['data','Flux'].values
-    nerror=data.loc['data','Error'].values
-    photon_error=data.loc['photon err','Values']
+    nflux = np.sum(spec, axis=1)
+    nerror = np.sqrt(np.sum(specerr*specerr, axis=1))
 
-    best_model=model_info.loc['Weight'].iloc[:-1].astype(float).idxmax()
-    best= model_info.loc[:,best_model]
-    nfree=(model_info.loc['Params Errors', best_model] != 0.0).sum()
+    # Model and corrected data
+    modelfile = white + 'wl_models_info.csv'
+    datafile = white + 'wl_data.csv'
+    model_info = pd.read_csv(modelfile, index_col=[0, 1]).loc[visit]
+    best_model = model_info.loc['Weight', :'Model 124'].astype(float).idxmax()
+    best = model_info.loc[:, best_model]
+    resids = best.loc['Residuals'].values*1e6
+    data = pd.read_csv(datafile, index_col=[0, 1]).loc[visit]
+
+    flux = data.loc['data','Normalized Flux'].values
+    error = data.loc['data','Normalized Error'].values
+    #nflux = data.loc['data','Flux'].values
+    #nerror = data.loc['data','Error'].values
+    photon_error = data.loc['photon err','Values']
+    
+    nfree = (model_info.loc['Params Errors', best_model] != 0.0).sum()
     dof = len(flux) - nfree
-    resids=best.loc['Residuals'].values*1e6
-    wlphase=best.loc['Corrected Phase'].values
-    cor=best.loc['Corrected Flux'].values
-    corerr=best.loc['Corrected Error'].values
-    model=best.loc['Smooth Model'].values
-    modelx=best.loc['Smooth Model Phase'].values
-    norm=best.loc['Params'].values[1]
-    sys_model=flux/cor/norm
-    full_model=flux-resids*norm/1e6
-    xmin=np.min(wlphase)-0.02
-    xmax=np.max(wlphase)+.02
-
+    wlphase = best.loc['Corrected Phase'].values
+    cor = best.loc['Corrected Flux'].values
+    corerr = best.loc['Corrected Error'].values
+    model = best.loc['Smooth Model'].values
+    modelx = best.loc['Smooth Model Phase'].values
+    # norm = best.loc['Params'].values[1]
+    epoch = best.loc['Params'].values[1]
+    period = best.loc['Params'].values[16]
+    # sys_model = flux/cor/norm
+    # full_model = flux - resids*norm/1e6
+    phase = (date-epoch) / period
+    phase = phase - np.floor(phase)
+    phase[phase > 0.5] = phase[phase > 0.5] - 1.0
+    xmin = np.min(wlphase) - 0.02
+    xmax = np.max(wlphase) + .02
+    
     #resids=resids[1:]
     #res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf = adtest(resids, photon_error)
   elif method=='ramp':
@@ -233,53 +257,61 @@ def wlpaper(visit, method='marg'):
     full_model=flux-resids*norm/1e6
     xmin=np.min(wlphase)-0.02
     xmax=np.max(wlphase)+.02
-
-  f=plt.figure(figsize=(8,12))
-  plt.subplot(311)
-  plt.errorbar(wlphase, flux, error, color='w', ls='', marker='o',
-               ecolor='w', label='Error ', markersize=6, markeredgecolor='b')
+    
+  f, ax = plt.subplots(nrows=3, ncols=1, figsize=(8,12))
+  ax[0].errorbar(phase, nflux, nerror, color='w', ls='', marker='o',
+                 ecolor='w', label='Error ', markersize=6, markeredgecolor='b')
   #plt.plot(wlphase, full_model)
-  plt.xlim([xmin, xmax])
-  plt.ylabel('Normalized Flux')
-  plt.text(-.055, 0.9975, '(a)')
+  #ax[0].set_xlim([xmin, xmax])
+  ax[0].set_ylabel('Raw Flux')
+  ax[0].text(0.9, 0.75, '(a)', transform=ax[0].transAxes)
   #plt.text(.48,.999, 'Error ')
 
-  plt.subplot(312)
-  plt.errorbar(wlphase, cor, corerr, color='w', ls='', marker='o', ecolor='w'
-               , markersize=6, alpha=.8, markeredgecolor='b')
-  plt.plot(modelx, model, 'k')
-  plt.xlim([xmin, xmax])
-  plt.ylabel('Normalized Flux')
-  plt.text(-.055, .9975, '(b)')
+  ax[1].errorbar(wlphase, cor, corerr, color='w', ls='', marker='o', ecolor='b'
+                 , markersize=6, alpha=.8, markeredgecolor='b')
+  ax[1].plot(modelx, model, 'k')
+  ax[1].set_xlim([xmin, xmax])
+  ax[1].set_ylabel('Normalized Flux')
+  ax[1].text(.9, .75, '(b)', transform=ax[1].transAxes)
   #plt.text(.42,1.0, 'Error ')
 
 
-  flat=np.zeros_like(resids)
-  corerr*=1e6
-  plt.subplot(313)
-  p3=plt.errorbar(wlphase, resids, corerr, color='w', ls='', marker='o'
+  flat = np.zeros_like(resids)
+  corerr *= 1e6
+  p3=ax[2].errorbar(wlphase, resids, corerr, color='w', ls='', marker='o'
                   , ecolor='blue', label='Residuals', markersize=6, elinewidth=.7,markeredgecolor='b')
-  plt.xlim([xmin, xmax])
-  plt.xlabel('Phase')
-  plt.ylabel('Obs - Model [ppm]')
-  plt.plot([wlphase[0]-.06, wlphase[-1]+.06], [0,0], 'k')
-  plt.text(-.055, 350, '(c)')
+  ax[2].set_xlim([xmin, xmax])
+  ax[2].set_xlabel('Phase')
+  ax[2].set_ylabel('Obs - Model [ppm]')
+  ax[2].plot([wlphase[0]-.06, wlphase[-1]+.06], [0,0], 'k')
+  ax[2].text(0.9, 0.75, '(c)', transform=ax[2].transAxes)
 
-  std_res=np.std(resids)
-  ratio=std_res/photon_error
+  std_res = np.std(resids)
+  ratio = std_res / photon_error
 
-  rchi2=np.sum(resids*resids/corerr/corerr)/dof
+  rchi2 = np.sum(resids*resids/corerr/corerr)/dof
   print(rchi2)
   #plt.text(.52,-500, 'RMS: %03d ppm' % std_res)
   #rchi2=1.1
-  plt.text(.045,-600, r'$\chi^2_{red} = %.2f$' % rchi2)
+  #plt.text(.8, .2, r'$\chi^2_{red} = %.2f$' % rchi2, transform=ax[2].transAxes)
   #plt.text(.52,-700, 'RMS/photon: %03f' % ratio)
   #plt.show()
-  savename='../../wlpaper_'+visit.replace('/','_')+'_'+method+'.pdf'
-  #plt.show()
-  plt.savefig(savename)
-  #f.clf()
-  res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf = adtest(resids, photon_error)
+  savename='../verification/outputs/wl_'+visit.replace('/','_')+'.pdf'
+  title = visit.split('/')[1]
+  ax[0].set_title(title)
+  
+  if savefig==True:
+      plt.savefig(savename)
+  else:
+      print(savename)
+      plt.show()
+  #plt.clf()
+  #plt.close('all')
+
+  
+  # res, cdf1, gauss_resids_0, gauss_resids_3, gauss_cdf = adtest(resids, photon_error)
+
+  
   #sys.exit()
   #plt.subplot(414)
   #plt.plot(res, cdf1, 'ro', label='Residuals')
@@ -291,17 +323,17 @@ def wlpaper(visit, method='marg'):
   #figure.set_size_inches(12, 10)
   #plt.savefig('wlpaper_'+visit.replace('/','_')+'_'+method+'.pdf', )
 
-  plt.clf()
-  plt.plot(res, cdf1, 'ro', label='Residuals')
-  plt.plot(gauss_resids_0, gauss_cdf, label='Theoretical noise limit Gaussian')
-  plt.plot(gauss_resids_3, gauss_cdf, 'purple', label='Gaussian')
-  plt.legend(numpoints=1)
-  plt.xlabel('Residuals [ppm]')
-  plt.ylabel('CDF')
-  plt.show()
-  #plt.savefig('cdf'+method+'.png')
+  # plt.clf()
+  # plt.plot(res, cdf1, 'ro', label='Residuals')
+  # plt.plot(gauss_resids_0, gauss_cdf, label='Theoretical noise limit Gaussian')
+  # plt.plot(gauss_resids_3, gauss_cdf, 'purple', label='Gaussian')
+  # plt.legend(numpoints=1)
+  # plt.xlabel('Residuals [ppm]')
+  # plt.ylabel('CDF')
+  # plt.show()
+  # #plt.savefig('cdf'+method+'.png')
 
-  #correlated(resids,name=visit.replace('/','_')+'_'+method)
+  # correlated(resids, name=visit.replace('/','_')+'_'+method)
 
 if __name__=='__main__':
   visit=sys.argv[1]+'/'+sys.argv[2]+'/'+sys.argv[3]

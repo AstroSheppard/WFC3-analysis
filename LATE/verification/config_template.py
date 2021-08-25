@@ -1,3 +1,7 @@
+# After cloning git, copy this file and rename it "config.py".
+# You can then change the config.py file without creating
+# conflicts for future git pulls.
+
 # Inputs to all bin_analysis files, including binfit_new.py,
 # marg_new.py, compare_spectra.py. 
 

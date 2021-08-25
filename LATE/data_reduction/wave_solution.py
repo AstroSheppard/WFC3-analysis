@@ -14,7 +14,8 @@ def pixel_scale(y):
     to determine max and min scale
     for given ycen"""
     min=.0028*y+44.68
-    max=.0026*y+45.112
+    # max1=.0026*y+45.112
+    max = 0.0026*(150+y) + 45.112
     out=np.asarray([min,max])
     return out
 
@@ -176,6 +177,8 @@ def wave_solution(visit, dire, level, plotting=False, savename=False, phase=Fals
             yref=hdr['CRPIX2']
             xcen=xref-xcor
             ycen=yref-ycor
+            # For testing more exact centroid
+            # xcen = 502 + (507 - .5 * 522) + .033 - 505 + xref
             exp.close()
             break
         else:

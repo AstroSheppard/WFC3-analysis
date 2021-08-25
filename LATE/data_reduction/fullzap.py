@@ -69,10 +69,10 @@ def ap(frame):
 
     #f1=np.argmax(f)
     # Define max value as the median of the top 5
-    # highest flux rows to avoid oddities from
+    # highest flux columns to avoid oddities from
     # cosmic rays
     norm = np.median(np.sort(f)[-5:])
-    per=0.03
+    per = 0.03
     #for per in perc:
         # Get all rows with flux > 2% of norm flux --- this can be adjustable
     index = np.where(f > per*norm)[0]
@@ -183,7 +183,7 @@ def zapped(allspec, sigma1=8, sigma2=5):
             rows=np.ma.mean(np.sort(allspec, axis=2)[:,:,15:-15],axis=2)
             medians=np.tile(np.ma.median(allspec, axis=0),(nspec, 1,1))
 
-            ### Median sigma check
+            ### Median sigma check (as opposed to mean done by anom)
             #sigmas=np.sqrt(np.sum((allspec-medians)*(allspec-medians), axis=0)/(nspec-np.sum(allspec.mask, axis=0)))
             #np.place(sigmas, sigmas==0, 1)
             #crs=np.abs(allspec-medians)/sigmas
@@ -241,7 +241,8 @@ def zapped(allspec, sigma1=8, sigma2=5):
             print('Cosmic rays corrected %d' % nzap)
             print('Total pixels %d' % (nspat * nwave))
             print('Percent %.4f' % (100*(nzap + 0.0)/nspat/nwave))
-
+            print('Per exposure percent %.4f' % (100*(nzap + 0.0)/nspat/nwave/nspec))
+            breakpoint()
         #sss
         return allspec
 

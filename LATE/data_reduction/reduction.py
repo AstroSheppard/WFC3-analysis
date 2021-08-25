@@ -24,41 +24,41 @@ def flatfield(visit, direction, wave=[0]):
     test.close()
 
     if len(wave)==1:
-        df=pd.read_csv('./wave_sol/wave_solution.csv', index_col=0)
-        wave=df.loc[visit, 'Wavelength Solution [A]'].values
+        df = pd.read_csv('./wave_sol/wave_solution.csv', index_col=0)
+        wave = df.loc[visit, 'Wavelength Solution [A]'].values
     # Units of wave are angstrom
     cube=fits.open('flats.fits')
-    wmin=cube[0].header['WMIN']
-    wmax=cube[0].header['WMAX']
-    xsize, ysize=cube[0].data.shape
+    wmin = cube[0].header['WMIN']
+    wmax = cube[0].header['WMAX']
+    xsize, ysize = cube[0].data.shape
 
     # Subarrays are centered. Get same shape as data
-    center = xsize // 2
-    st = center-sub // 2-5
-    end = center+sub // 2+5
+    center = xsize//2
+    st = center-sub//2 - 5
+    end = center + sub//2 + 5
 
-    x1,x2,y1,y2=pd.read_csv('coords.csv'
-                            , index_col=0).loc[visit,'Initial Aperture'].values
+    x1, x2, y1, y2 = pd.read_csv('coords.csv'
+                                 , index_col=0).loc[visit,'Initial Aperture'].values
 
-    wave[wave < wmin]=wmin
-    wave[wave > wmax]=wmax
-    x=(wave-wmin)/(wmax-wmin)
-    FF=0
+    wave[wave < wmin] = wmin
+    wave[wave > wmax] = wmax
+    x = (wave-wmin) / (wmax-wmin)
+    FF = 0
     for i, img in enumerate(cube):
         # Extract only within subarray
         dat=img.data[st:end,st:end]
         # Ignore insensitive pixels on edges
-        dat[0:5,:]=1.0
-        dat[-5:,:]=1.0
-        dat[:,0:5]=1.0
-        dat[:,-5:]=1.0
+        dat[0:5, :] = 1.0
+        dat[-5:, :] = 1.0
+        dat[:, 0:5] = 1.0
+        dat[:, -5:] = 1.0
         # dat is now a flat for entire subarray.
         # Need to ignore pixels excluded by user-selected
         # aperture.
-        flat=dat[x1:x2, y1:y2]
-        xd,yd=flat.shape
+        flat = dat[x1:x2, y1:y2]
+        xd, yd = flat.shape
         # this should be same dimensions as exp
-        FF+=flat*np.power(x,i)
+        FF += flat * np.power(x, i)
     cube.close()
 
     nexp=len(data)
@@ -128,6 +128,7 @@ if __name__=='__main__':
     
     wave=wave_solution.wave_solution(visit, direction, 'bkg', plotting=plotting
                                      , savename=False, transit=transit)
+
     print('Initial wavelength solution has finished.')
     data, headers, errors, raw, ff= flatfield(visit, direction, wave=wave)
     print('Second order flatfield corrections have finished.')
@@ -156,6 +157,7 @@ if __name__=='__main__':
     # img = data[0,:,:]
     # plt.imshow(img)
     # plt.show()
+    breakpoint()
 
     filename = './reduced/' + visit + '/' + direction + '/final/'
     fullzap.bad_pixels(cr_data, headers, errors, raw, filename)

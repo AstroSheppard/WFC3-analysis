@@ -1,6 +1,7 @@
 env
 LATE/planets/l9859b
 LATE/planets/l9859c
+LATE/planets/l9859c_small
 *~
 LATE/data/l9859b
 LATE/data/l9859c
@@ -8,10 +9,13 @@ LATE/data/l9859c
 *#
 coords.csv
 old
+l98b_wave.pdf
 LATE/wl_preprocess/config.py
 LATE/wl_preprocess/data_outputs
 LATE/bin_analysis/config.py
 LATE/bin_analysis/outputs
 LATE/data_reduction/config.py
 LATE/data_reduction/reduced
+LATE/verification/outputs
+LATE/verification/config.py
 .DS_Store

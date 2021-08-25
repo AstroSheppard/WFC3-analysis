@@ -755,7 +755,7 @@ def marg(p_start
 
         try:
             cur=pd.read_csv('./outputs/bin_params.csv', index_col=[0, 1, 2, 3, 4])
-            #cur=cur.drop((visit, nbin), errors='ignore')
+            #cur=cur.drop((visit, method, binsize, int(nbin)), errors='ignore')
             cur=pd.concat((cur, bin_params), sort=False)
             cur=cur[~cur.index.duplicated(keep='first')]
             cur.to_csv('./outputs/bin_params.csv', index_label=['Obs', 'Method', 'Bin Size', 'Bin', 'Type'])

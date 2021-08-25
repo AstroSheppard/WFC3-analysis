@@ -44,7 +44,7 @@ def test_interp():
     assumption is that the baseline intensity is approximately the same.
 
     Testing the average wavelength between J and H confirms this. Interpolating
-    the curves is equivalent ro interpolating the coeffs then generating
+    the curves is equivalent to interpolating the coeffs then generating
     a curve. True means they are equivalent. """
 
     lds=pd.read_table('3d.tsv')
