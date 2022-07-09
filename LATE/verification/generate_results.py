@@ -17,6 +17,7 @@ from compare_spectra import compare_spectra
 
 if __name__=='__main__':
 
+    # Initiate config file reader
     config = configparser.ConfigParser()
     config.read('./config.py')
     # Read in data.
